@@ -242,49 +242,41 @@
             </div>
 
             <!-- Dashboard Stats -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="stat-card bg-primary">
-                        <div class="stat-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3><%= pendingDonations ? pendingDonations.length : 0 %></h3>
-                            <p>Pending Requests</p>
-                        </div>
+            <div class="stats-grid">
+                <div class="stat-card bg-primary grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= pendingDonations ? pendingDonations.length : 0 %></h3>
+                        <p>Pending Requests</p>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stat-card bg-success">
-                        <div class="stat-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3><%= confirmedDonations ? confirmedDonations.length : 0 %></h3>
-                            <p>Confirmed Donations</p>
-                        </div>
+                <div class="stat-card bg-success grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= confirmedDonations ? confirmedDonations.length : 0 %></h3>
+                        <p>Confirmed Donations</p>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stat-card bg-info">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3><%= assignedVolunteers ? assignedVolunteers.length : 0 %></h3>
-                            <p>Assigned Volunteers</p>
-                        </div>
+                <div class="stat-card bg-info grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= assignedVolunteers ? assignedVolunteers.length : 0 %></h3>
+                        <p>Assigned Volunteers</p>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stat-card bg-warning">
-                        <div class="stat-icon">
-                            <i class="fas fa-truck"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3><%= completedDonations ? completedDonations.length : 0 %></h3>
-                            <p>Completed</p>
-                        </div>
+                <div class="stat-card bg-warning grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= completedDonations ? completedDonations.length : 0 %></h3>
+                        <p>Completed</p>
                     </div>
                 </div>
             </div>
@@ -404,33 +396,31 @@
             <!-- Assigned Volunteers Section -->
             <div class="section-card">
                 <h2><i class="fas fa-users text-info"></i> Assigned Volunteers</h2>
-                <div class="row">
+                <div class="cards-grid">
                     <% if (assignedVolunteers && assignedVolunteers.length > 0) { %>
                         <% assignedVolunteers.forEach(volunteer => { %>
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="volunteer-card">
-                                <div class="volunteer-avatar">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <div class="volunteer-info">
-                                    <h5><%= volunteer.volunteer_name %></h5>
-                                    <p class="text-muted mb-1">
-                                        <i class="fas fa-phone"></i> <%= volunteer.volunteer_phone %>
-                                    </p>
-                                    <p class="text-muted mb-2">
-                                        <i class="fas fa-map-marker-alt"></i> <%= volunteer.city || 'Location not specified' %>
-                                    </p>
-                                    <div class="volunteer-stats">
-                                        <span class="badge bg-primary">
-                                            Active: <%= volunteer.active_donations || 0 %> donations
-                                        </span>
-                                    </div>
+                        <div class="volunteer-card grid-item">
+                            <div class="volunteer-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="volunteer-info">
+                                <h5><%= volunteer.volunteer_name %></h5>
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-phone"></i> <%= volunteer.volunteer_phone %>
+                                </p>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt"></i> <%= volunteer.city || 'Location not specified' %>
+                                </p>
+                                <div class="volunteer-stats">
+                                    <span class="badge bg-primary">
+                                        Active: <%= volunteer.active_donations || 0 %> donations
+                                    </span>
                                 </div>
                             </div>
                         </div>
                         <% }); %>
                     <% } else { %>
-                        <div class="col-12 text-center py-4">
+                        <div class="grid-span-full text-center py-4">
                             <i class="fas fa-users fa-3x text-muted mb-3"></i>
                             <p class="text-muted">No volunteers assigned yet</p>
                         </div>
@@ -441,32 +431,22 @@
             <!-- Analytics & Reports -->
             <div class="section-card">
                 <h2><i class="fas fa-chart-line text-info"></i> Analytics & Reports</h2>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="chart-container mb-4">
-                            <h5><i class="fas fa-pie-chart"></i> Donation Status Distribution</h5>
-                            <canvas id="donationStatusChart" style="height: 300px;"></canvas>
-                        </div>
+                <div class="charts-grid four-column">
+                    <div class="chart-container grid-item">
+                        <h5><i class="fas fa-pie-chart"></i> Donation Status Distribution</h5>
+                        <canvas id="donationStatusChart" style="height: 300px;"></canvas>
                     </div>
-                    <div class="col-md-6">
-                        <div class="chart-container mb-4">
-                            <h5><i class="fas fa-chart-bar"></i> Monthly Donation Trends</h5>
-                            <canvas id="monthlyTrendsChart" style="height: 300px;"></canvas>
-                        </div>
+                    <div class="chart-container grid-item">
+                        <h5><i class="fas fa-chart-bar"></i> Monthly Donation Trends</h5>
+                        <canvas id="monthlyTrendsChart" style="height: 300px;"></canvas>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="chart-container mb-4">
-                            <h5><i class="fas fa-users"></i> Active Volunteers</h5>
-                            <canvas id="volunteersChart" style="height: 300px;"></canvas>
-                        </div>
+                    <div class="chart-container grid-item">
+                        <h5><i class="fas fa-users"></i> Active Volunteers</h5>
+                        <canvas id="volunteersChart" style="height: 300px;"></canvas>
                     </div>
-                    <div class="col-md-6">
-                        <div class="chart-container mb-4">
-                            <h5><i class="fas fa-boxes"></i> Items Donated</h5>
-                            <canvas id="itemsChart" style="height: 300px;"></canvas>
-                        </div>
+                    <div class="chart-container grid-item">
+                        <h5><i class="fas fa-boxes"></i> Items Donated</h5>
+                        <canvas id="itemsChart" style="height: 300px;"></canvas>
                     </div>
                 </div>
             </div>

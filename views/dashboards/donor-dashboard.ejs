@@ -21,49 +21,41 @@
             </div>
 
             <!-- Dashboard Stats -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="stat-card bg-primary">
-                        <div class="stat-icon">
-                            <i class="fas fa-heart"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3><%= stats.total_donations || 0 %></h3>
-                            <p>Total Donations</p>
-                        </div>
+            <div class="stats-grid">
+                <div class="stat-card bg-primary grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= stats.total_donations || 0 %></h3>
+                        <p>Total Donations</p>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stat-card bg-warning">
-                        <div class="stat-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3><%= stats.pending || 0 %></h3>
-                            <p>Pending</p>
-                        </div>
+                <div class="stat-card bg-warning grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= stats.pending || 0 %></h3>
+                        <p>Pending</p>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stat-card bg-info">
-                        <div class="stat-icon">
-                            <i class="fas fa-truck"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3><%= (stats.assigned || 0) + (stats.picked_up || 0) %></h3>
-                            <p>In Progress</p>
-                        </div>
+                <div class="stat-card bg-info grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= (stats.assigned || 0) + (stats.picked_up || 0) %></h3>
+                        <p>In Progress</p>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="stat-card bg-success">
-                        <div class="stat-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3><%= stats.completed || 0 %></h3>
-                            <p>Completed</p>
-                        </div>
+                <div class="stat-card bg-success grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= stats.completed || 0 %></h3>
+                        <p>Completed</p>
                     </div>
                 </div>
             </div>
@@ -71,40 +63,34 @@
             <!-- Quick Actions -->
             <div class="section-card">
                 <h2><i class="fas fa-bolt text-warning"></i> Quick Actions</h2>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <a href="/donate" class="action-card">
-                            <div class="action-icon bg-primary">
-                                <i class="fas fa-plus"></i>
-                            </div>
-                            <div class="action-content">
-                                <h5>Make New Donation</h5>
-                                <p>Start a new donation request</p>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <a href="/rewards" class="action-card">
-                            <div class="action-icon bg-success">
-                                <i class="fas fa-gift"></i>
-                            </div>
-                            <div class="action-content">
-                                <h5>View Rewards</h5>
-                                <p>Check your earned rewards</p>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <a href="/user" class="action-card">
-                            <div class="action-icon bg-info">
-                                <i class="fas fa-user-edit"></i>
-                            </div>
-                            <div class="action-content">
-                                <h5>Update Profile</h5>
-                                <p>Manage your account settings</p>
-                            </div>
-                        </a>
-                    </div>
+                <div class="actions-grid">
+                    <a href="/donate" class="action-card grid-item">
+                        <div class="action-icon bg-primary">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="action-content">
+                            <h5>Make New Donation</h5>
+                            <p>Start a new donation request</p>
+                        </div>
+                    </a>
+                    <a href="/rewards" class="action-card grid-item">
+                        <div class="action-icon bg-success">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <div class="action-content">
+                            <h5>View Rewards</h5>
+                            <p>Check your earned rewards</p>
+                        </div>
+                    </a>
+                    <a href="/user" class="action-card grid-item">
+                        <div class="action-icon bg-info">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <div class="action-content">
+                            <h5>Update Profile</h5>
+                            <p>Manage your account settings</p>
+                        </div>
+                    </a>
                 </div>
             </div>
 
