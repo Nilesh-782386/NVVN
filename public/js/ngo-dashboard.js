@@ -103,6 +103,139 @@ function animateStatCard(card) {
     }, 300);
 }
 
+// Map variables
+let ngoNetworkMap = null;
+
+// Initialize NGO Network Map
+function initializeNGONetworkMap() {
+    if (document.getElementById('ngoNetworkMap')) {
+        // Initialize map centered on India
+        ngoNetworkMap = L.map('ngoNetworkMap').setView([20.5937, 78.9629], 5);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(ngoNetworkMap);
+        
+        // Load NGO locations and volunteer routes
+        loadNGOLocations();
+        loadVolunteerRoutes();
+        
+        // Refresh map data every 2 minutes
+        setInterval(() => {
+            loadVolunteerRoutes();
+        }, 120000);
+    }
+}
+
+// Load NGO locations on map
+function loadNGOLocations() {
+    fetch('/api/ngo-locations')
+        .then(response => response.json())
+        .then(data => {
+            if (data.ngos) {
+                data.ngos.forEach(ngo => {
+                    const marker = L.marker([ngo.latitude, ngo.longitude], {
+                        icon: L.divIcon({
+                            className: 'ngo-marker',
+                            html: '<i class="fas fa-home" style="color: #0d6efd; font-size: 18px;"></i>',
+                            iconSize: [25, 25]
+                        })
+                    }).addTo(ngoNetworkMap);
+                    
+                    marker.bindPopup(`
+                        <div>
+                            <h6><strong>${ngo.ngo_name}</strong></h6>
+                            <p class="mb-1"><i class="fas fa-map-marker-alt"></i> ${ngo.city}, ${ngo.state}</p>
+                            <span class="badge bg-success">Verified</span>
+                        </div>
+                    `);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading NGO locations:', error);
+        });
+}
+
+// Load volunteer routes on map
+function loadVolunteerRoutes() {
+    fetch('/api/volunteer-routes')
+        .then(response => response.json())
+        .then(data => {
+            if (data.routes) {
+                // Clear existing route lines (if any)
+                ngoNetworkMap.eachLayer((layer) => {
+                    if (layer instanceof L.Polyline && layer.options.className === 'volunteer-route') {
+                        ngoNetworkMap.removeLayer(layer);
+                    }
+                });
+                
+                // Clear existing volunteer markers
+                ngoNetworkMap.eachLayer((layer) => {
+                    if (layer instanceof L.Marker && layer.options.icon && layer.options.icon.options.className === 'volunteer-marker') {
+                        ngoNetworkMap.removeLayer(layer);
+                    }
+                });
+                
+                data.routes.forEach(route => {
+                    // Add volunteer marker
+                    const volunteerMarker = L.marker([route.volunteer_lat, route.volunteer_lng], {
+                        icon: L.divIcon({
+                            className: 'volunteer-marker',
+                            html: '<i class="fas fa-user" style="color: #198754; font-size: 16px;"></i>',
+                            iconSize: [20, 20]
+                        })
+                    }).addTo(ngoNetworkMap);
+                    
+                    volunteerMarker.bindPopup(`
+                        <div>
+                            <h6><strong>${route.volunteer_name}</strong></h6>
+                            <p class="mb-1">Status: <span class="badge bg-${getStatusBadgeColor(route.status)}">${route.status}</span></p>
+                            <p class="mb-0">→ ${route.ngo_name}</p>
+                        </div>
+                    `);
+                    
+                    // Draw route line
+                    const routeLine = L.polyline([
+                        [route.volunteer_lat, route.volunteer_lng],
+                        [route.ngo_lat, route.ngo_lng]
+                    ], {
+                        color: route.status === 'assigned' ? '#ffc107' : '#fd7e14',
+                        weight: 3,
+                        opacity: 0.7,
+                        className: 'volunteer-route'
+                    }).addTo(ngoNetworkMap);
+                    
+                    routeLine.bindPopup(`
+                        <div>
+                            <h6>Active Route</h6>
+                            <p class="mb-1"><strong>From:</strong> ${route.volunteer_name}</p>
+                            <p class="mb-1"><strong>To:</strong> ${route.ngo_name}</p>
+                            <p class="mb-0">Status: <span class="badge bg-${getStatusBadgeColor(route.status)}">${route.status}</span></p>
+                        </div>
+                    `);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading volunteer routes:', error);
+        });
+}
+
+// Helper function for status badge colors
+function getStatusBadgeColor(status) {
+    switch(status) {
+        case 'pending': return 'warning';
+        case 'assigned': return 'info';
+        case 'picked_up': return 'primary';
+        case 'delivered': return 'success';
+        case 'completed': return 'success';
+        default: return 'secondary';
+    }
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     console.log('NGO Dashboard initialized');
@@ -112,4 +245,9 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    
+    // Initialize map after DOM is loaded
+    setTimeout(() => {
+        initializeNGONetworkMap();
+    }, 500);
 });

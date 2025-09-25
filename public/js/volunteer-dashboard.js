@@ -120,6 +120,123 @@ setInterval(() => {
         });
 }, 60000);
 
+// Map variables
+let volunteerAreaMap = null;
+
+// Initialize Volunteer Area Map
+function initializeVolunteerAreaMap() {
+    if (document.getElementById('volunteerAreaMap')) {
+        // Initialize map centered on volunteer's area (default to Mumbai for demo)
+        volunteerAreaMap = L.map('volunteerAreaMap').setView([19.0760, 72.8777], 10);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(volunteerAreaMap);
+        
+        // Load local NGOs and donation pickup points
+        loadLocalNGOs();
+        loadDonationPickups();
+        loadVolunteerLocation();
+        
+        // Refresh map data every 2 minutes
+        setInterval(() => {
+            loadDonationPickups();
+        }, 120000);
+    }
+}
+
+// Load local NGO locations on map
+function loadLocalNGOs() {
+    fetch('/api/ngo-locations')
+        .then(response => response.json())
+        .then(data => {
+            if (data.ngos) {
+                data.ngos.forEach(ngo => {
+                    const marker = L.marker([ngo.latitude, ngo.longitude], {
+                        icon: L.divIcon({
+                            className: 'ngo-marker-volunteer',
+                            html: '<i class="fas fa-home" style="color: #0d6efd; font-size: 16px;"></i>',
+                            iconSize: [22, 22]
+                        })
+                    }).addTo(volunteerAreaMap);
+                    
+                    marker.bindPopup(`
+                        <div>
+                            <h6><strong>${ngo.ngo_name}</strong></h6>
+                            <p class="mb-1"><i class="fas fa-map-marker-alt"></i> ${ngo.city}, ${ngo.state}</p>
+                            <span class="badge bg-success">Verified NGO</span>
+                        </div>
+                    `);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading local NGOs:', error);
+        });
+}
+
+// Load donation pickup points
+function loadDonationPickups() {
+    fetch('/api/volunteer/pickup-locations')
+        .then(response => response.json())
+        .then(data => {
+            if (data.pickups) {
+                // Clear existing pickup markers
+                volunteerAreaMap.eachLayer((layer) => {
+                    if (layer instanceof L.Marker && layer.options.icon && layer.options.icon.options.className === 'pickup-marker') {
+                        volunteerAreaMap.removeLayer(layer);
+                    }
+                });
+                
+                data.pickups.forEach(pickup => {
+                    const marker = L.marker([pickup.latitude, pickup.longitude], {
+                        icon: L.divIcon({
+                            className: 'pickup-marker',
+                            html: '<i class="fas fa-map-marker-alt" style="color: #ffc107; font-size: 16px;"></i>',
+                            iconSize: [20, 20]
+                        })
+                    }).addTo(volunteerAreaMap);
+                    
+                    marker.bindPopup(`
+                        <div>
+                            <h6>Pickup Request #${pickup.id}</h6>
+                            <p class="mb-1"><strong>Items:</strong> ${pickup.items}</p>
+                            <p class="mb-1"><strong>Address:</strong> ${pickup.address}</p>
+                            <span class="badge bg-warning">Available</span>
+                        </div>
+                    `);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading pickup locations:', error);
+            // If API doesn't exist, skip this feature
+        });
+}
+
+// Load volunteer's own location
+function loadVolunteerLocation() {
+    // For demo, use a fixed location. In real app, this would come from user profile
+    const volunteerLocation = [19.0896, 72.8656]; // Example location in Mumbai
+    
+    const volunteerMarker = L.marker(volunteerLocation, {
+        icon: L.divIcon({
+            className: 'volunteer-self-marker',
+            html: '<i class="fas fa-user" style="color: #198754; font-size: 18px; background: white; border-radius: 50%; padding: 4px; border: 2px solid #198754;"></i>',
+            iconSize: [30, 30]
+        })
+    }).addTo(volunteerAreaMap);
+    
+    volunteerMarker.bindPopup(`
+        <div>
+            <h6><strong>Your Location</strong></h6>
+            <p class="mb-0"><i class="fas fa-user-check"></i> Ready to help!</p>
+        </div>
+    `);
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Volunteer Dashboard initialized');
@@ -137,4 +254,9 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
         });
     });
+    
+    // Initialize map after DOM is loaded
+    setTimeout(() => {
+        initializeVolunteerAreaMap();
+    }, 500);
 });

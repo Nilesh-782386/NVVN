@@ -150,6 +150,50 @@ router.get("/api/ngo/dashboard-data", ensureNGOAuthenticated, async (req, res) =
   }
 });
 
+// API endpoint to get NGO locations for map
+router.get("/api/ngo-locations", async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT id, ngo_name, city, state, latitude, longitude, verification_status
+      FROM ngos 
+      WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND verification_status = 'verified'
+    `);
+    
+    res.json({ ngos: result.rows });
+  } catch (err) {
+    console.error("NGO locations API error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// API endpoint to get volunteer-NGO routes for active donations
+router.get("/api/volunteer-routes", async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT 
+        d.id as donation_id,
+        d.status,
+        v.fullname as volunteer_name,
+        v.latitude as volunteer_lat,
+        v.longitude as volunteer_lng,
+        n.ngo_name,
+        n.latitude as ngo_lat,
+        n.longitude as ngo_lng
+      FROM donations d
+      LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      LEFT JOIN ngos n ON d.ngo_id = n.id
+      WHERE d.status IN ('assigned', 'picked_up') 
+        AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL
+        AND n.latitude IS NOT NULL AND n.longitude IS NOT NULL
+    `);
+    
+    res.json({ routes: result.rows });
+  } catch (err) {
+    console.error("Volunteer routes API error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Mark donation as completed
 router.post("/ngo/complete-donation/:id", ensureNGOAuthenticated, async (req, res) => {
   try {
