@@ -8,6 +8,94 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/css/dashboard.css">
+    <style>
+        /* Availability Management Styles */
+        .availability-display {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .availability-item {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .schedule-grid {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .day-schedule {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .day-schedule.active {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .day-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .day-label {
+            font-weight: 500;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        
+        .day-checkbox {
+            margin: 0;
+        }
+        
+        .time-inputs {
+            padding-left: 30px;
+        }
+        
+        .time-inputs input {
+            font-size: 0.9rem;
+        }
+        
+        .priority-badge {
+            font-size: 0.75em;
+            padding: 0.25em 0.5em;
+        }
+        
+        .donation-request-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+        
+        .donation-request-card.priority-high {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .donation-request-card.priority-urgent {
+            border-left: 4px solid #fd7e14;
+            background: #fff3cd;
+        }
+        
+        .auto-assignment-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            animation: pulse 2s infinite;
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard-container">
@@ -118,6 +206,22 @@
                             <p class="text-muted">No available donation requests in your area</p>
                         </div>
                     <% } %>
+                </div>
+            </div>
+
+            <!-- Availability Management -->
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2><i class="fas fa-calendar-check text-success"></i> My Availability</h2>
+                    <button class="btn btn-primary btn-sm" onclick="openAvailabilityModal()">
+                        <i class="fas fa-edit"></i> Update Schedule
+                    </button>
+                </div>
+                <div id="currentAvailability" class="availability-display">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                        <p>Click "Update Schedule" to set your availability</p>
+                    </div>
                 </div>
             </div>
 
@@ -244,6 +348,167 @@
                             <small class="d-block">My Location</small>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Availability Modal -->
+    <div class="modal fade" id="availabilityModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-calendar-edit"></i> Update Availability Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="availabilityForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Maximum Travel Distance</label>
+                                <div class="input-group">
+                                    <input type="number" id="maxRadius" class="form-control" value="10" min="1" max="50">
+                                    <span class="input-group-text">km</span>
+                                </div>
+                                <small class="text-muted">How far are you willing to travel for pickups?</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Your Location</label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="getCurrentLocation()">
+                                    <i class="fas fa-map-marker-alt"></i> Use Current Location
+                                </button>
+                                <div id="locationStatus" class="text-muted small mt-1">Click to set your location</div>
+                            </div>
+                        </div>
+                        
+                        <h6><i class="fas fa-clock"></i> Weekly Schedule</h6>
+                        <div class="schedule-grid">
+                            <div class="day-schedule" data-day="1">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day1" class="day-checkbox">
+                                    <label for="day1" class="day-label">Monday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="2">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day2" class="day-checkbox">
+                                    <label for="day2" class="day-label">Tuesday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="3">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day3" class="day-checkbox">
+                                    <label for="day3" class="day-label">Wednesday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="4">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day4" class="day-checkbox">
+                                    <label for="day4" class="day-label">Thursday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="5">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day5" class="day-checkbox">
+                                    <label for="day5" class="day-label">Friday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="6">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day6" class="day-checkbox">
+                                    <label for="day6" class="day-label">Saturday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="10:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="16:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="0">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day0" class="day-checkbox">
+                                    <label for="day0" class="day-label">Sunday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="10:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="16:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveAvailability()">
+                        <i class="fas fa-save"></i> Save Schedule
+                    </button>
                 </div>
             </div>
         </div>
