@@ -1083,3 +1083,274 @@ body:has(.sidebar.collapsed) .main-content .stats-grid {
 .timeline-item.active .timeline-icon {
     animation: pulse 2s infinite;
 }
+
+/* Status Overview Section Styles */
+.status-overview {
+    margin-bottom: 2.5rem;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    text-align: center;
+}
+
+/* Status Cards */
+.status-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 12px 12px 0 0;
+    transition: all 0.3s ease;
+}
+
+.status-card.pending-card::before {
+    background: linear-gradient(90deg, #ffc107, #ffeb3b);
+}
+
+.status-card.confirmed-card::before,
+.status-card.active-card::before,
+.status-card.accepted-card::before {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.status-card.available-card::before {
+    background: linear-gradient(90deg, #17a2b8, #20c997);
+}
+
+.status-card.completed-card::before {
+    background: linear-gradient(90deg, #007bff, #0056b3);
+}
+
+.status-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+}
+
+.status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.status-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
+
+.count-badge {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    color: white;
+    min-width: 40px;
+    text-align: center;
+}
+
+.status-content {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.status-item {
+    background: #ffffff;
+    border: 1px solid #f1f3f4;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.status-item:hover {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    transform: translateX(5px);
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.item-id {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.item-date,
+.completion-date {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.item-content p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+.donor-name,
+.volunteer-info,
+.ngo-info {
+    color: #495057;
+    font-weight: 500;
+}
+
+.volunteer-contact {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.location {
+    color: #6c757d;
+}
+
+.status-note {
+    color: #17a2b8;
+    font-style: italic;
+    font-size: 0.8rem;
+}
+
+.item-badges {
+    margin: 0.5rem 0;
+}
+
+.item-badges .badge {
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+}
+
+.item-actions {
+    margin-top: 0.75rem;
+    text-align: right;
+}
+
+.btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 4px;
+}
+
+.view-more {
+    text-align: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    margin-bottom: 1rem;
+}
+
+/* Full Width Map Styles */
+.full-width-map {
+    margin: 2rem -1.5rem;
+}
+
+.map-container.full-width {
+    margin: 0;
+    padding: 0;
+    width: calc(100% + 3rem);
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+}
+
+.map-container.full-width #ngoNetworkMap,
+.map-container.full-width #volunteerAreaMap {
+    border-radius: 0;
+    width: 100% !important;
+    height: 70vh !important;
+}
+
+/* Responsive adjustments for status cards */
+@media (max-width: 768px) {
+    .status-overview .content-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .status-card {
+        padding: 1rem;
+    }
+    
+    .status-header h3 {
+        font-size: 1rem;
+    }
+    
+    .full-width-map {
+        margin: 1rem -1rem;
+    }
+    
+    .map-container.full-width {
+        width: calc(100% + 2rem);
+        margin-left: -1rem;
+        margin-right: -1rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .status-card {
+        padding: 2rem;
+    }
+    
+    .status-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .item-content p {
+        font-size: 1rem;
+    }
+}
+
+/* Animation for status cards */
+.status-card {
+    animation: fadeIn 0.6s ease forwards;
+}
+
+.status-card:nth-child(1) { animation-delay: 0.1s; }
+.status-card:nth-child(2) { animation-delay: 0.2s; }
+.status-card:nth-child(3) { animation-delay: 0.3s; }

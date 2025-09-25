@@ -281,10 +281,145 @@
                 </div>
             </div>
 
-            <!-- Confirmed Donations Section -->
+            <!-- Donation Status Overview - Three Horizontal Cards -->
+            <div class="status-overview">
+                <h2 class="section-title"><i class="fas fa-clipboard-list text-primary"></i> Donation Management Overview</h2>
+                <div class="content-grid three-column">
+                    <!-- Pending Requests Card -->
+                    <div class="status-card pending-card">
+                        <div class="status-header">
+                            <h3><i class="fas fa-clock text-warning"></i> Pending Requests</h3>
+                            <span class="count-badge bg-warning"><%= pendingDonations ? pendingDonations.length : 0 %></span>
+                        </div>
+                        <div class="status-content">
+                            <% if (pendingDonations && pendingDonations.length > 0) { %>
+                                <% pendingDonations.slice(0, 3).forEach(donation => { %>
+                                <div class="status-item">
+                                    <div class="item-header">
+                                        <span class="item-id">#<%= donation.id %></span>
+                                        <span class="item-date"><%= new Date(donation.created_at).toLocaleDateString() %></span>
+                                    </div>
+                                    <div class="item-content">
+                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.fname %> <%= donation.lname %></p>
+                                        <p class="location"><i class="fas fa-map-marker-alt"></i> <%= donation.city %>, <%= donation.state %></p>
+                                        <div class="item-badges">
+                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
+                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
+                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% }); %>
+                                <% if (pendingDonations.length > 3) { %>
+                                <div class="view-more">
+                                    <button class="btn btn-outline-warning btn-sm" onclick="viewAllPending()">
+                                        <i class="fas fa-plus"></i> View <%= pendingDonations.length - 3 %> More
+                                    </button>
+                                </div>
+                                <% } %>
+                            <% } else { %>
+                                <div class="empty-state">
+                                    <i class="fas fa-clock fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">No pending requests</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Confirmed Donations Card -->
+                    <div class="status-card confirmed-card">
+                        <div class="status-header">
+                            <h3><i class="fas fa-check-circle text-success"></i> Confirmed Donations</h3>
+                            <span class="count-badge bg-success"><%= confirmedDonations ? confirmedDonations.length : 0 %></span>
+                        </div>
+                        <div class="status-content">
+                            <% if (confirmedDonations && confirmedDonations.length > 0) { %>
+                                <% confirmedDonations.slice(0, 3).forEach(donation => { %>
+                                <div class="status-item">
+                                    <div class="item-header">
+                                        <span class="item-id">#<%= donation.id %></span>
+                                        <span class="status-badge bg-<%= donation.status === 'assigned' ? 'info' : 'primary' %>">
+                                            <%= donation.status === 'assigned' ? 'Assigned' : 'Picked Up' %>
+                                        </span>
+                                    </div>
+                                    <div class="item-content">
+                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.fname %> <%= donation.lname %></p>
+                                        <% if (donation.volunteer_name) { %>
+                                        <p class="volunteer-info"><i class="fas fa-hands-helping"></i> <%= donation.volunteer_name %></p>
+                                        <% } %>
+                                        <div class="item-badges">
+                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
+                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
+                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% }); %>
+                                <% if (confirmedDonations.length > 3) { %>
+                                <div class="view-more">
+                                    <button class="btn btn-outline-success btn-sm" onclick="viewAllConfirmed()">
+                                        <i class="fas fa-plus"></i> View <%= confirmedDonations.length - 3 %> More
+                                    </button>
+                                </div>
+                                <% } %>
+                            <% } else { %>
+                                <div class="empty-state">
+                                    <i class="fas fa-check-circle fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">No confirmed donations</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Completed Donations Card -->
+                    <div class="status-card completed-card">
+                        <div class="status-header">
+                            <h3><i class="fas fa-trophy text-info"></i> Completed Donations</h3>
+                            <span class="count-badge bg-info"><%= completedDonations ? completedDonations.length : 0 %></span>
+                        </div>
+                        <div class="status-content">
+                            <% if (completedDonations && completedDonations.length > 0) { %>
+                                <% completedDonations.slice(0, 3).forEach(donation => { %>
+                                <div class="status-item">
+                                    <div class="item-header">
+                                        <span class="item-id">#<%= donation.id %></span>
+                                        <span class="completion-date"><%= new Date(donation.updated_at).toLocaleDateString() %></span>
+                                    </div>
+                                    <div class="item-content">
+                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.fname %> <%= donation.lname %></p>
+                                        <% if (donation.volunteer_name) { %>
+                                        <p class="volunteer-info"><i class="fas fa-hands-helping"></i> <%= donation.volunteer_name %></p>
+                                        <% } %>
+                                        <div class="item-badges">
+                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
+                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
+                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% }); %>
+                                <% if (completedDonations.length > 3) { %>
+                                <div class="view-more">
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewAllCompleted()">
+                                        <i class="fas fa-plus"></i> View <%= completedDonations.length - 3 %> More
+                                    </button>
+                                </div>
+                                <% } %>
+                            <% } else { %>
+                                <div class="empty-state">
+                                    <i class="fas fa-trophy fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">No completed donations yet</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Donations Table -->
             <div class="section-card">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2><i class="fas fa-check-circle text-success"></i> Confirmed Donations</h2>
+                    <h2><i class="fas fa-table text-primary"></i> Detailed Donations Table</h2>
                     <div class="donation-filters">
                         <div class="row">
                             <div class="col-md-4">
@@ -451,11 +586,11 @@
                 </div>
             </div>
 
-            <!-- NGO Network Map -->
-            <div class="section-card">
+            <!-- NGO Network Map - Full Width -->
+            <div class="section-card full-width-map">
                 <h2><i class="fas fa-map text-success"></i> NGO Network & Volunteer Routes</h2>
-                <div class="map-container">
-                    <div id="ngoNetworkMap" style="height: 400px; border-radius: 8px;"></div>
+                <div class="map-container full-width">
+                    <div id="ngoNetworkMap" style="height: 70vh; width: 100%; border-radius: 8px;"></div>
                 </div>
                 <div class="map-legend mt-3">
                     <div class="row text-center">
