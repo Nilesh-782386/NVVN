@@ -194,6 +194,99 @@ router.get("/api/volunteer-routes", async (req, res) => {
   }
 });
 
+// API endpoint for NGO analytics data
+router.get("/api/ngo/analytics-data", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    // Get status distribution data
+    const statusResult = await query(`
+      SELECT 
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+        COUNT(CASE WHEN status = 'assigned' THEN 1 END) as assigned,
+        COUNT(CASE WHEN status = 'picked_up' THEN 1 END) as picked_up,
+        COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
+      FROM donations
+    `);
+
+    // Get monthly trends data (last 6 months)
+    const monthlyResult = await query(`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        COUNT(*) as total_donations,
+        COUNT(CASE WHEN status IN ('delivered', 'completed') THEN 1 END) as completed
+      FROM donations
+      WHERE created_at >= CURRENT_DATE - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY month
+    `);
+
+    // Get volunteer distribution by city
+    const volunteerResult = await query(`
+      SELECT 
+        COALESCE(city, 'Unknown') as city,
+        COUNT(DISTINCT volunteer_name) as volunteers
+      FROM donations 
+      WHERE volunteer_name IS NOT NULL
+      GROUP BY city
+      ORDER BY volunteers DESC
+      LIMIT 5
+    `);
+
+    // Get items donated distribution
+    const itemsResult = await query(`
+      SELECT 
+        COALESCE(SUM(books), 0) as books,
+        COALESCE(SUM(clothes), 0) as clothes,
+        COALESCE(SUM(toys), 0) as toys,
+        COALESCE(SUM(grains), 0) as grains,
+        COALESCE(SUM(footwear), 0) as footwear,
+        COALESCE(SUM("schoolSupplies"), 0) as school_supplies
+      FROM donations
+    `);
+
+    // Format data for frontend
+    const statusData = statusResult.rows[0];
+    
+    // Format monthly data
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyData = {
+      labels: monthlyResult.rows.map(row => monthNames[new Date(row.month).getMonth()]),
+      donations: monthlyResult.rows.map(row => parseInt(row.total_donations)),
+      completed: monthlyResult.rows.map(row => parseInt(row.completed))
+    };
+
+    // Format volunteer data
+    const volunteerData = {
+      labels: volunteerResult.rows.map(row => row.city),
+      volunteers: volunteerResult.rows.map(row => parseInt(row.volunteers))
+    };
+
+    // Format items data
+    const itemsRow = itemsResult.rows[0];
+    const itemsData = {
+      labels: ['Books', 'Clothes', 'Toys', 'Grains', 'Footwear', 'School Supplies'],
+      items: [
+        parseInt(itemsRow.books || 0),
+        parseInt(itemsRow.clothes || 0),
+        parseInt(itemsRow.toys || 0),
+        parseInt(itemsRow.grains || 0),
+        parseInt(itemsRow.footwear || 0),
+        parseInt(itemsRow.school_supplies || 0)
+      ]
+    };
+
+    res.json({
+      statusData,
+      monthlyData,
+      volunteerData,
+      itemsData
+    });
+  } catch (err) {
+    console.error("NGO analytics API error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Mark donation as completed
 router.post("/ngo/complete-donation/:id", ensureNGOAuthenticated, async (req, res) => {
   try {

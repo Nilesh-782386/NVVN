@@ -123,6 +123,10 @@ setInterval(() => {
 // Map variables
 let volunteerAreaMap = null;
 
+// Chart variables
+let volunteerProgressChart = null;
+let responseTimeChart = null;
+
 // Initialize Volunteer Area Map
 function initializeVolunteerAreaMap() {
     if (document.getElementById('volunteerAreaMap')) {
@@ -237,6 +241,108 @@ function loadVolunteerLocation() {
     `);
 }
 
+// Initialize Volunteer Performance Charts
+function initializeVolunteerCharts() {
+    createVolunteerProgressChart();
+    createResponseTimeChart();
+}
+
+// Create Volunteer Progress Chart
+function createVolunteerProgressChart() {
+    const ctx = document.getElementById('volunteerProgressChart');
+    if (!ctx) return;
+    
+    // Sample data - in real app this would come from API
+    const progressData = {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+        completed: [2, 4, 3, 6, 5, 8]
+    };
+    
+    volunteerProgressChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: progressData.labels,
+            datasets: [{
+                label: 'Requests Completed',
+                data: progressData.completed,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#28a745',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Create Response Time Chart
+function createResponseTimeChart() {
+    const ctx = document.getElementById('responseTimeChart');
+    if (!ctx) return;
+    
+    // Sample data - in real app this would come from API
+    const responseData = {
+        labels: ['< 1 hour', '1-4 hours', '4-12 hours', '12-24 hours', '> 24 hours'],
+        times: [12, 18, 8, 4, 2]
+    };
+    
+    responseTimeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: responseData.labels,
+            datasets: [{
+                data: responseData.times,
+                backgroundColor: [
+                    '#28a745', // green for < 1 hour
+                    '#17a2b8', // teal for 1-4 hours
+                    '#ffc107', // yellow for 4-12 hours
+                    '#fd7e14', // orange for 12-24 hours
+                    '#dc3545'  // red for > 24 hours
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Volunteer Dashboard initialized');
@@ -255,8 +361,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Initialize map after DOM is loaded
+    // Initialize map and charts after DOM is loaded
     setTimeout(() => {
         initializeVolunteerAreaMap();
+        initializeVolunteerCharts();
     }, 500);
 });
