@@ -8,6 +8,226 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/css/dashboard.css">
+    <style>
+        /* Notification Panel Styles */
+        .notification-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 350px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+            z-index: 9998;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .notification-panel.show {
+            transform: translateX(0);
+        }
+        
+        .notification-header {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .notification-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        .notification-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .notification-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .notification-item.unread {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .notification-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .notification-bell:hover i {
+            transform: scale(1.1);
+            transition: transform 0.2s;
+        }
+        
+        /* UI/UX Enhancements - Smooth Transitions & Glowing Effects */
+        .section-card {
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .btn {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.4);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .stat-card {
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: rgba(255,255,255,0.2);
+        }
+        
+        .stat-card:hover .stat-icon i {
+            transform: rotate(360deg);
+            transition: transform 0.6s ease;
+        }
+        
+        .table-hover tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(0,123,255,0.08) !important;
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .action-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-3px);
+            border-color: #007bff;
+            box-shadow: 0 8px 25px rgba(0,123,255,0.3);
+            text-decoration: none;
+        }
+        
+        .action-card:hover .action-icon {
+            transform: scale(1.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .volunteer-card, .donation-request-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+        
+        .volunteer-card:hover, .donation-request-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-color: #007bff;
+        }
+        
+        .map-container {
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .map-container:hover {
+            transform: scale(1.01);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .chart-container {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+        
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        
+        /* CareConnect Brand Colors */
+        .text-careconnect-primary { color: #e74c3c; }
+        .text-careconnect-secondary { color: #3498db; }
+        .bg-careconnect-primary { background-color: #e74c3c; }
+        .bg-careconnect-secondary { background-color: #3498db; }
+        
+        /* Pulse animation for notification badge */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .notification-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Smooth slide animation for panels */
+        .slide-in-right {
+            animation: slideInRight 0.4s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard-container">
@@ -71,7 +291,36 @@
 
             <!-- Confirmed Donations Section -->
             <div class="section-card">
-                <h2><i class="fas fa-check-circle text-success"></i> Confirmed Donations</h2>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2><i class="fas fa-check-circle text-success"></i> Confirmed Donations</h2>
+                    <div class="donation-filters">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <select id="statusFilter" class="form-select form-select-sm" onchange="applyDonationFilters()">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="picked_up">Picked Up</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" id="volunteerSearch" class="form-control form-control-sm" placeholder="Search volunteer..." onkeyup="applyDonationFilters()">
+                            </div>
+                            <div class="col-md-4">
+                                <select id="itemTypeFilter" class="form-select form-select-sm" onchange="applyDonationFilters()">
+                                    <option value="">All Items</option>
+                                    <option value="books">Books</option>
+                                    <option value="clothes">Clothes</option>
+                                    <option value="toys">Toys</option>
+                                    <option value="grains">Grains</option>
+                                    <option value="footwear">Footwear</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
@@ -244,6 +493,23 @@
             </div>
         </div>
     </div>
+
+    <!-- Notification Panel -->
+    <div id="notificationPanel" class="notification-panel" style="display: none;">
+        <div class="notification-header">
+            <h5><i class="fas fa-bell"></i> Notifications</h5>
+            <button class="btn-close" onclick="closeNotificationPanel()"></button>
+        </div>
+        <div id="notificationList" class="notification-list">
+            <!-- Notifications will be loaded here -->
+        </div>
+        <div class="notification-footer">
+            <button class="btn btn-sm btn-primary" onclick="markAllAsRead()">Mark all as read</button>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="notificationToastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

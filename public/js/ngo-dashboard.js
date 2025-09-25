@@ -465,6 +465,357 @@ function createChartsWithSampleData() {
     createItemsChart(null);
 }
 
+// ===== NOTIFICATION SYSTEM =====
+
+// Global notification variables
+let notificationCount = 0;
+let notifications = [];
+
+// Toggle notification panel
+function toggleNotificationPanel() {
+    const panel = document.getElementById('notificationPanel');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'flex';
+        setTimeout(() => {
+            panel.classList.add('show');
+        }, 10);
+        loadNotifications();
+    } else {
+        closeNotificationPanel();
+    }
+}
+
+// Close notification panel
+function closeNotificationPanel() {
+    const panel = document.getElementById('notificationPanel');
+    panel.classList.remove('show');
+    setTimeout(() => {
+        panel.style.display = 'none';
+    }, 300);
+}
+
+// Load notifications from API
+function loadNotifications() {
+    fetch('/api/notifications/ngo')
+        .then(response => response.json())
+        .then(data => {
+            notifications = data.notifications || [];
+            displayNotifications();
+            updateNotificationBadge();
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            // Show sample notifications for demo
+            showSampleNotifications();
+        });
+}
+
+// Display notifications in panel
+function displayNotifications() {
+    const notificationList = document.getElementById('notificationList');
+    if (notifications.length === 0) {
+        notificationList.innerHTML = `
+            <div class="notification-item text-center text-muted py-4">
+                <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                <p>No new notifications</p>
+            </div>
+        `;
+        return;
+    }
+    
+    notificationList.innerHTML = notifications.map(notification => `
+        <div class="notification-item ${notification.read ? '' : 'unread'}" onclick="markAsRead('${notification.id}')">
+            <div class="d-flex">
+                <div class="notification-icon me-3">
+                    <i class="fas ${getNotificationIcon(notification.type)} text-${getNotificationColor(notification.type)}"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">${notification.title}</h6>
+                    <p class="mb-1 text-muted small">${notification.message}</p>
+                    <small class="text-muted">${formatTime(notification.created_at)}</small>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Update notification badge
+function updateNotificationBadge() {
+    const badge = document.getElementById('notificationBadge');
+    const unreadCount = notifications.filter(n => !n.read).length;
+    notificationCount = unreadCount;
+    
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount > 99 ? '99+' : unreadCount.toString();
+        badge.style.display = 'block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// Show notification toast
+function showNotificationToast(title, message, type = 'info') {
+    const toastContainer = document.getElementById('notificationToastContainer');
+    const toastId = 'toast_' + Date.now();
+    
+    const toastHTML = `
+        <div id="${toastId}" class="toast show" role="alert" style="min-width: 300px;">
+            <div class="toast-header">
+                <i class="fas ${getNotificationIcon(type)} text-${getNotificationColor(type)} me-2"></i>
+                <strong class="me-auto">${title}</strong>
+                <small class="text-muted">now</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    
+    // Auto remove toast after 5 seconds
+    setTimeout(() => {
+        const toast = document.getElementById(toastId);
+        if (toast) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+// Mark notification as read
+function markAsRead(notificationId) {
+    fetch(`/api/notifications/mark-read/${notificationId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update local notification status
+            notifications = notifications.map(n => 
+                n.id === notificationId ? { ...n, read: true } : n
+            );
+            displayNotifications();
+            updateNotificationBadge();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+// Mark all notifications as read
+function markAllAsRead() {
+    fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            notifications = notifications.map(n => ({ ...n, read: true }));
+            displayNotifications();
+            updateNotificationBadge();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking all notifications as read:', error);
+    });
+}
+
+// Helper functions for notifications
+function getNotificationIcon(type) {
+    switch(type) {
+        case 'volunteer_assigned': return 'fa-user-check';
+        case 'donation_completed': return 'fa-check-circle';
+        case 'new_volunteer': return 'fa-user-plus';
+        case 'urgent': return 'fa-exclamation-triangle';
+        default: return 'fa-info-circle';
+    }
+}
+
+function getNotificationColor(type) {
+    switch(type) {
+        case 'volunteer_assigned': return 'success';
+        case 'donation_completed': return 'primary';
+        case 'new_volunteer': return 'info';
+        case 'urgent': return 'warning';
+        default: return 'secondary';
+    }
+}
+
+function formatTime(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now - time;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return time.toLocaleDateString();
+}
+
+// Show sample notifications for demo
+function showSampleNotifications() {
+    notifications = [
+        {
+            id: '1',
+            type: 'volunteer_assigned',
+            title: 'New Volunteer Accepted Request',
+            message: 'John Doe has accepted a donation request for books and clothes.',
+            created_at: new Date(Date.now() - 15 * 60000), // 15 minutes ago
+            read: false
+        },
+        {
+            id: '2',
+            type: 'donation_completed',
+            title: 'Donation Delivered',
+            message: 'A donation of toys and stationery has been successfully delivered.',
+            created_at: new Date(Date.now() - 2 * 60 * 60000), // 2 hours ago
+            read: false
+        },
+        {
+            id: '3',
+            type: 'new_volunteer',
+            title: 'New Volunteer Registered',
+            message: 'Sarah Johnson has registered as a volunteer in Mumbai area.',
+            created_at: new Date(Date.now() - 24 * 60 * 60000), // 1 day ago
+            read: true
+        }
+    ];
+    
+    displayNotifications();
+    updateNotificationBadge();
+}
+
+// Check for new notifications periodically
+function startNotificationPolling() {
+    // Check for notifications every 30 seconds
+    setInterval(() => {
+        checkForNewNotifications();
+    }, 30000);
+}
+
+// Check for new notifications
+function checkForNewNotifications() {
+    fetch('/api/notifications/check-new')
+        .then(response => response.json())
+        .then(data => {
+            if (data.hasNew) {
+                // Reload notifications and show toast
+                loadNotifications();
+                showNotificationToast(
+                    'New Notification',
+                    'You have new notifications!',
+                    'info'
+                );
+            }
+        })
+        .catch(error => {
+            console.log('Error checking for new notifications:', error);
+        });
+}
+
+// ===== SEARCH & FILTER FUNCTIONALITY =====
+
+// Apply filters to donation table
+function applyDonationFilters() {
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    const volunteerSearch = document.getElementById('volunteerSearch').value.toLowerCase();
+    const itemTypeFilter = document.getElementById('itemTypeFilter').value.toLowerCase();
+    
+    const tableRows = document.querySelectorAll('tbody tr');
+    let visibleCount = 0;
+    
+    tableRows.forEach(row => {
+        let shouldShow = true;
+        
+        // Status filter
+        if (statusFilter && !row.textContent.toLowerCase().includes(statusFilter)) {
+            shouldShow = false;
+        }
+        
+        // Volunteer search
+        if (volunteerSearch) {
+            const volunteerCell = row.children[3]; // Volunteer column
+            if (volunteerCell && !volunteerCell.textContent.toLowerCase().includes(volunteerSearch)) {
+                shouldShow = false;
+            }
+        }
+        
+        // Item type filter
+        if (itemTypeFilter) {
+            const itemsCell = row.children[2]; // Items column
+            if (itemsCell && !itemsCell.textContent.toLowerCase().includes(itemTypeFilter)) {
+                shouldShow = false;
+            }
+        }
+        
+        if (shouldShow) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Show/hide "no results" message
+    showNoResultsMessage(visibleCount === 0);
+}
+
+// Show no results message
+function showNoResultsMessage(show) {
+    let noResultsRow = document.getElementById('noResultsRow');
+    
+    if (show && !noResultsRow) {
+        const tbody = document.querySelector('tbody');
+        const colCount = document.querySelector('thead tr').children.length;
+        
+        noResultsRow = document.createElement('tr');
+        noResultsRow.id = 'noResultsRow';
+        noResultsRow.innerHTML = `
+            <td colspan="${colCount}" class="text-center py-4">
+                <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                <p class="text-muted">No donations match your filters</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="clearAllFilters()">Clear Filters</button>
+            </td>
+        `;
+        tbody.appendChild(noResultsRow);
+    } else if (!show && noResultsRow) {
+        noResultsRow.remove();
+    }
+}
+
+// Clear all filters
+function clearAllFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('volunteerSearch').value = '';
+    document.getElementById('itemTypeFilter').value = '';
+    applyDonationFilters();
+}
+
+// Add smooth animations to filter changes
+function addFilterAnimations() {
+    const filterInputs = document.querySelectorAll('#statusFilter, #volunteerSearch, #itemTypeFilter');
+    filterInputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.boxShadow = '0 0 0 0.2rem rgba(0, 123, 255, 0.25)';
+            this.style.transition = 'all 0.2s ease';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.style.transform = 'scale(1)';
+            this.style.boxShadow = '';
+        });
+    });
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     console.log('NGO Dashboard initialized');
@@ -479,5 +830,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         initializeNGONetworkMap();
         initializeAnalyticsCharts();
+        
+        // Initialize notification system
+        loadNotifications();
+        startNotificationPolling();
+        
+        // Initialize search and filter functionality
+        addFilterAnimations();
     }, 500);
 });

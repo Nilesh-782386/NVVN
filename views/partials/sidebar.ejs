@@ -2,6 +2,11 @@
 <div class="sidebar">
     <div class="sidebar-header">
         <h4><i class="fas fa-heart text-danger"></i> CareConnect</h4>
+        <!-- Notification Bell -->
+        <div class="notification-bell" onclick="toggleNotificationPanel()" style="position: absolute; top: 15px; right: 15px; cursor: pointer;">
+            <i class="fas fa-bell text-white"></i>
+            <span id="notificationBadge" class="notification-badge badge bg-danger" style="display: none; position: absolute; top: -8px; right: -8px; font-size: 10px; min-width: 16px;">0</span>
+        </div>
     </div>
     
     <nav class="sidebar-nav">
