@@ -1354,3 +1354,347 @@ body:has(.sidebar.collapsed) .main-content .stats-grid {
 .status-card:nth-child(1) { animation-delay: 0.1s; }
 .status-card:nth-child(2) { animation-delay: 0.2s; }
 .status-card:nth-child(3) { animation-delay: 0.3s; }
+
+/* Enhanced Laptop/Desktop Scaling and Hover Effects */
+
+/* Enhanced Table Styles for Laptop/Desktop */
+.table {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+@media (min-width: 1200px) {
+    .table {
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+    
+    .table th {
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .table td {
+        padding: 1.25rem 1.5rem;
+        font-size: 1rem;
+        vertical-align: middle;
+    }
+}
+
+/* Enhanced Table Row Hover Effects */
+.table tbody tr {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.table tbody tr:hover {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f8f9fa 100%);
+    transform: translateX(8px);
+    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+    border-left: 4px solid #007bff;
+}
+
+.table tbody tr:hover td {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+/* Enhanced Button Styles for Laptop/Desktop */
+@media (min-width: 1200px) {
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        border-radius: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        min-width: 120px;
+    }
+    
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        min-width: 100px;
+    }
+    
+    .btn-lg {
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+        min-width: 140px;
+    }
+}
+
+/* Enhanced Button Hover Effects */
+.btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #007bff 100%);
+    border-color: #0056b3;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #1e7e34 0%, #28a745 100%);
+    border-color: #1e7e34;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #d39e00 0%, #ffc107 100%);
+    border-color: #d39e00;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #bd2130 0%, #dc3545 100%);
+    border-color: #bd2130;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #117a8b 0%, #17a2b8 100%);
+    border-color: #117a8b;
+}
+
+/* Enhanced Card Styles for Laptop/Desktop */
+@media (min-width: 1200px) {
+    .section-card {
+        padding: 2.5rem;
+        border-radius: 16px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    }
+    
+    .section-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        border-color: #007bff;
+    }
+    
+    .stat-card {
+        padding: 2rem;
+        border-radius: 16px;
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 16px 32px rgba(0,0,0,0.15);
+    }
+    
+    .donation-request-card,
+    .volunteer-card,
+    .action-card {
+        padding: 2rem;
+        border-radius: 16px;
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    
+    .donation-request-card:hover,
+    .volunteer-card:hover,
+    .action-card:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 16px 32px rgba(0,0,0,0.15);
+    }
+}
+
+/* Enhanced Badge Styles for Better Readability */
+.badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+@media (min-width: 1200px) {
+    .badge {
+        font-size: 0.9rem;
+        padding: 0.6rem 1.2rem;
+    }
+}
+
+.badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Enhanced Form Controls for Laptop/Desktop */
+@media (min-width: 1200px) {
+    .form-control,
+    .form-select {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.25rem rgba(0,123,255,0.25);
+        transform: scale(1.01);
+    }
+}
+
+/* Enhanced Chart Container Hover Effects */
+.chart-container {
+    transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.chart-container:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.15);
+}
+
+.chart-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #007bff, #28a745, #ffc107, #dc3545);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+}
+
+.chart-container:hover::before {
+    opacity: 1;
+}
+
+/* Enhanced Tooltip Styles for Charts */
+.chart-tooltip {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    max-width: 300px;
+    z-index: 1000;
+}
+
+@media (min-width: 1200px) {
+    .chart-tooltip {
+        padding: 1.25rem 2rem;
+        font-size: 1rem;
+        max-width: 350px;
+    }
+}
+
+/* Enhanced Icon Scaling for Laptop/Desktop */
+@media (min-width: 1200px) {
+    .stat-icon {
+        width: 80px;
+        height: 80px;
+        font-size: 2.5rem;
+        border-radius: 16px;
+    }
+    
+    .action-icon {
+        width: 70px;
+        height: 70px;
+        font-size: 2rem;
+        border-radius: 14px;
+    }
+}
+
+/* Enhanced Empty State Styling */
+.empty-state {
+    padding: 3rem 2rem;
+    transition: all 0.3s ease;
+}
+
+@media (min-width: 1200px) {
+    .empty-state {
+        padding: 4rem 3rem;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+    
+    .empty-state:hover i {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+/* Enhanced Loading States */
+.loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@media (min-width: 1200px) {
+    .loading-spinner {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-width: 4px;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Interactive Elements */
+.interactive-element {
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    cursor: pointer;
+}
+
+.interactive-element:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+}
+
+.interactive-element:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+}
