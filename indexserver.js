@@ -11,6 +11,10 @@ import generalRoutes from "./routes/general.js";
 import volunteerRoutes from "./routes/volunteer.js";
 import volunteerDashboardRoutes from "./routes/volunteer-dashboard.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import dbMigrationRoutes from "./routes/db-migration.js";
+import ngoDashboardRoutes from "./routes/ngo-dashboard.js";
+import adminRoutes from "./routes/admin.js";
+import chatbotRoutes from "./routes/chatbot.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = 5000;
@@ -45,10 +49,18 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.ngo = req.session.ngo || null;
   res.locals.volunteer = req.session.volunteer || null;
+  
+  // ✅ ADD THIS LINE - Make admin available to templates (Line 48)
+  res.locals.admin = req.session.admin || null;
+  
   next();
 });
 
-// Use routes
+// Use routes - Admin routes FIRST to avoid conflicts
+console.log("🔍 Registering admin routes...");
+app.use('/admin', adminRoutes);
+console.log("✅ Admin routes registered successfully");
+
 app.use(authRoutes);
 app.use(donationRoutes);
 app.use(ngoRoutes);
@@ -56,6 +68,11 @@ app.use(generalRoutes);
 app.use(volunteerRoutes);
 app.use(volunteerDashboardRoutes);
 app.use(dashboardRoutes);
+app.use(dbMigrationRoutes);
+app.use(ngoDashboardRoutes);
+
+// Use chatbot routes
+app.use(chatbotRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -65,7 +82,7 @@ app.use((err, req, res, next) => {
 
 async function ensureSchema() {
   try {
-    console.log("PostgreSQL schema is ready - all tables created successfully");
+    console.log("MySQL schema is ready - all tables created successfully");
     console.log("✅ Tables available: donors, volunteers, ngos, donation_requests, users, ngo_register, donations");
   } catch (e) {
     console.warn("Schema check skipped:", e.message);

@@ -279,26 +279,28 @@
         <!-- Stats Section -->
         <div class="stats-row">
           <div class="stat-card">
-            <h3><%= total %></h3>
+            <h3><%= typeof total !== 'undefined' ? total : '0' %></h3>
             <p>Total NGOs</p>
           </div>
           <div class="stat-card">
-            <h3><%= applied %></h3>
+            <h3><%= typeof applied !== 'undefined' ? applied : '0' %></h3>
             <p>Applied</p>
           </div>
           <div class="stat-card">
-            <h3><%= verified %></h3>
+            <h3><%= typeof verified !== 'undefined' ? verified : '0' %></h3>
             <p>Verified</p>
           </div>
           <div class="stat-card">
-            <h3><%= suspended %></h3>
+            <h3><%= typeof suspended !== 'undefined' ? suspended : '0' %></h3>
             <p>Suspended</p>
           </div>
         </div>
         <!-- Filters Section -->
         <% 
           const citySet = new Set(); 
-          ngos.forEach(ngo => { if (ngo.city) citySet.add(ngo.city); }); 
+          if (typeof ngos !== 'undefined' && ngos) {
+            ngos.forEach(ngo => { if (ngo.city) citySet.add(ngo.city); }); 
+          }
           const cityList = Array.from(citySet);
           let cityOptions = '';
           for (let i = 0; i < cityList.length; i++) {
@@ -378,11 +380,11 @@
 <div class="certificate-section">
   <h6 class="section-title"><i class="fas fa-certificate"></i> Certificates</h6>
 
-  <% if (!ngo.certificate_url) { %>
+  <% if (!ngo.registration_certificate) { %>
     <div class="no-certificate">Certificate not uploaded</div>
 
-  <% } else if (ngo.certificate_url.endsWith('.pdf')) { %>
-    <% const encodedUrl = ngo.certificate_url.replace(/'/g, "\\'"); %>
+  <% } else if (ngo.registration_certificate.endsWith('.pdf')) { %>
+    <% const encodedUrl = ngo.registration_certificate.replace(/'/g, "\\'"); %>
     <div class="certificate-preview">
       <button class="certificate-link" onclick="showPDFViewer(<%= ngo.id %>, '<%= encodedUrl %>')">
         <i class="fas fa-file-pdf"></i> View Certificate
@@ -398,7 +400,7 @@
       </a>
     </div>
 
-  <% } else if (ngo.certificate_url.endsWith('.jpg') || ngo.certificate_url.endsWith('.jpeg') || ngo.certificate_url.endsWith('.png')) { %>
+  <% } else if (ngo.registration_certificate.endsWith('.jpg') || ngo.registration_certificate.endsWith('.jpeg') || ngo.registration_certificate.endsWith('.png')) { %>
     <div class="certificate-preview">
       <img src="/admin/ngos/<%= ngo.id %>/certificate" alt="Certificate Image" style="max-width:100%;max-height:300px;display:block;margin-bottom:10px;" />
       <a href="/admin/ngos/<%= ngo.id %>/certificate" target="_blank" class="certificate-link">
@@ -495,6 +497,18 @@
           window._searchTimeout = setTimeout(() => filterForm.submit(), 500);
         });
       });
+    </script>
+    
+    <!-- Auto-refresh every 30 seconds to show new NGO registrations -->
+    <script>
+      // Auto-refresh the page every 30 seconds to show new NGO registrations
+      setInterval(function() {
+        console.log("🔄 Auto-refreshing NGO management page...");
+        window.location.reload();
+      }, 30000); // 30 seconds
+      
+      // Show refresh notification
+      console.log("🔄 NGO Management page will auto-refresh every 30 seconds to show new registrations");
     </script>
   </body>
 </html> 

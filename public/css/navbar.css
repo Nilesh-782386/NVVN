@@ -64,3 +64,43 @@ nav .nav-bar .nav-bar_item a:hover:after {
   width: 100%;
   z-index: 100 !important;
 }
+
+/* Volunteer Link Styling */
+.volunteer-link {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding: 5px 10px !important;
+  line-height: 1.2 !important;
+}
+
+.volunteer-main {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  background: linear-gradient(45deg, #e43152, #8b5cf6) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-transform: uppercase !important;
+  margin-bottom: 2px !important;
+}
+
+.volunteer-sub {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #667eea !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.volunteer-link:hover .volunteer-main {
+  background: linear-gradient(45deg, #c41e3a, #7c3aed) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.volunteer-link:hover .volunteer-sub {
+  color: #5a67d8 !important;
+}

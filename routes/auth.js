@@ -32,97 +32,96 @@ function fileFilter(req, file, cb) {
 const upload = multer({ storage, fileFilter });
 const saltRounds = 10;
 
-// User login
+// User login - ✅ FIXED
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  console.log("🔍 LOGIN ATTEMPT:", { email, passwordLength: password?.length });
+  
   try {
-    const result = await query("SELECT * FROM users WHERE email = $1", [email]);
-    if (result.rows.length > 0) {
-      const user = result.rows[0];
+    const result = await query("SELECT * FROM users WHERE email = ?", [email]);
+    console.log("🔍 DATABASE RESULT:", result[0]?.length || 0, "users found");
+    
+    // ✅ FIXED: result[0] instead of result.rows
+    if (result[0] && result[0].length > 0) {
+      const user = result[0][0];
+      console.log("🔍 USER FOUND:", { id: user.id, email: user.email });
+      
       const valid = await bcrypt.compare(password, user.password);
+      console.log("🔍 PASSWORD VALID:", valid);
+      
       if (valid) {
         req.session.user = user;
+        console.log("🔍 SESSION SET:", req.session.user?.id);
         return res.json({ status: "success", redirect: "/" });
       } else {
+        console.log("🔍 PASSWORD INVALID");
         return res
           .status(401)
           .json({ status: "error", message: "Incorrect password" });
       }
     } else {
+      console.log("🔍 USER NOT FOUND");
       return res
         .status(404)
         .json({ status: "error", message: "User not found" });
     }
   } catch (err) {
-    console.error("Error logging in:", err);
+    console.error("🔍 LOGIN ERROR:", err);
     res.status(500).json({ status: "error", message: "Internal Server Error" });
   }
 });
 
-// NGO login
+// NGO login - ✅ FIXED WITH DEBUGGING
 router.post("/ngo-login", async (req, res) => {
   const { email, password } = req.body;
+  console.log("NGO Login Attempt:", { email, password });
+  
   try {
-    const sqlQuery = "SELECT * FROM ngo_register WHERE email = $1";
+    const sqlQuery = "SELECT * FROM ngo_register WHERE email = ?";
     const result = await query(sqlQuery, [email]);
-    if (result.rows.length > 0) {
-      const ngo = result.rows[0];
+    console.log("Database Result:", result[0]);
+    
+    if (result[0] && result[0].length > 0) {
+      const ngo = result[0][0];
+      console.log("Found NGO:", ngo.registration_number);
+      
       if (ngo.registration_number === password) {
-        req.session.user = ngo; // Use user session for consistency
-        return res.redirect("/"); // Redirect instead of render
+        console.log("Login SUCCESS");
+        req.session.ngo = ngo; // Set NGO session properly
+        req.session.user = ngo; // Also set user session for compatibility
+        return res.json({ success: true, message: "Login successful", redirect: "/ngo-dashboard" });
       } else {
-        return res.status(401).json({ message: "Incorrect password" });
+        console.log("Password MISMATCH");
+        return res.status(401).json({ success: false, message: "Incorrect password" });
       }
     } else {
-      return res.status(404).json({ message: "NGO not found" });
+      console.log("NGO NOT FOUND");
+      return res.status(404).json({ success: false, message: "NGO not found" });
     }
   } catch (err) {
     console.error("Error logging in:", err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 });
 
-// ✅ VOLUNTEER LOGIN (ADDED)
-router.post("/volunteer-login", async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const [rows] = await pool.query("SELECT * FROM volunteers WHERE email = ? AND status = 'active'", [email]);
-    
-    if (rows.length > 0) {
-      const volunteer = rows[0];
-      const valid = await bcrypt.compare(password, volunteer.password);
-      
-      if (valid) {
-        req.session.volunteer = volunteer;
-        return res.redirect("/volunteer-dashboard");
-      } else {
-        return res.status(401).json({ status: "error", message: "Incorrect password" });
-      }
-    } else {
-      return res.status(404).json({ status: "error", message: "Volunteer not found" });
-    }
-  } catch (err) {
-    console.error("Error in volunteer login:", err);
-    res.status(500).json({ status: "error", message: "Internal Server Error" });
-  }
-});
+// Volunteer login moved to volunteer.js to avoid duplication
 
-// User registration - FIXED (NO DATE FIELD)
+// User registration - ✅ FIXED
 router.post("/register-user", async (req, res) => {
-  const { Fullname, phone, email, password } = req.body;
+  const { Fullname, phone, email, password, city } = req.body;
   try {
-    const [checkRows] = await pool.query(
+    const checkResult = await query(
       "SELECT * FROM users WHERE email = ?",
       [email]
     );
-    if (checkRows.length > 0) {
+    // ✅ FIXED: checkResult[0] instead of result[0]
+    if (checkResult[0] && checkResult[0].length > 0) {
       return res.redirect("/user-login");
     } else {
       const hash = await bcrypt.hash(password, saltRounds);
-      // FIX: Removed date field
-      await pool.query(
-        "INSERT INTO users (fullname, phone, email, password) VALUES (?, ?, ?, ?)",
-        [Fullname, phone, email, hash]
+      await query(
+        "INSERT INTO users (fullname, phone, email, password, city) VALUES (?, ?, ?, ?, ?)",
+        [Fullname, phone, email, hash, city || 'Pune']
       );
       return res.redirect("/user-login");
     }
@@ -132,8 +131,13 @@ router.post("/register-user", async (req, res) => {
   }
 });
 
-// NGO registration
+// NGO registration - ✅ FIXED
+// NGO registration - ✅ FIXED VERSION
 router.post("/ngo-register", upload.single("file"), async (req, res) => {
+  console.log("🔍 NGO Registration Attempt:");
+  console.log("Request body:", req.body);
+  console.log("File uploaded:", req.file);
+  
   const {
     name,
     registration_number,
@@ -149,23 +153,44 @@ router.post("/ngo-register", upload.single("file"), async (req, res) => {
     url,
     socialsurl,
     terms,
+    ngo_type,
   } = req.body;
   const registration_certificate = req.file;
+  
+  console.log("📝 Registration Data:");
+  console.log("Name:", name);
+  console.log("Registration Number:", registration_number);
+  console.log("Email:", email);
+  console.log("Phone:", phone);
+  console.log("City:", city);
+  console.log("NGO Type:", ngo_type);
+  console.log("File:", registration_certificate ? registration_certificate.filename : "No file");
+  
   if (!registration_certificate) {
+    console.log("❌ File upload failed - no certificate provided");
     return res.status(400).send("File upload failed or invalid file type");
   }
+  
   try {
-    const [checkRows] = await pool.query(
+    console.log("🔍 Checking for duplicate registration number:", registration_number);
+    const checkResult = await query(
       "SELECT id FROM ngo_register WHERE registration_number = ?",
       [registration_number]
     );
-    if (checkRows.length > 0) {
+    
+    console.log("Duplicate check result:", checkResult[0]);
+    
+    if (checkResult[0] && checkResult[0].length > 0) {
+      console.log("❌ Registration number already exists:", registration_number);
       return res.render("login_register/ngo-register", {
         user: req.session.user,
         error: "Registration number already exists. Please use a unique registration number.",
       });
     }
-    const query = `
+    
+    console.log("✅ Registration number is unique, proceeding with registration...");
+
+    const insertQuery = `
       INSERT INTO ngo_register (
         ngo_name,
         registration_number,
@@ -180,10 +205,17 @@ router.post("/ngo-register", upload.single("file"), async (req, res) => {
         description,
         website_url,
         social_handle_url,
-        registration_certificate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        registration_certificate,
+        status,
+        latitude,
+        longitude,
+        ngo_type,
+        can_accept_universal
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    await pool.query(query, [
+    
+    console.log("📝 Inserting NGO into database...");
+    const result = await query(insertQuery, [
       name,
       registration_number,
       email,
@@ -197,44 +229,117 @@ router.post("/ngo-register", upload.single("file"), async (req, res) => {
       optnote,
       url,
       socialsurl,
-      registration_certificate.path,
+      registration_certificate.filename,
+      'applied',
+      null,
+      null,
+      ngo_type || 'multi_purpose',
+      true
     ]);
-    return res.redirect("/ngo-login");
+    
+    console.log("✅ NGO Registration Successful:");
+    console.log("NGO ID:", result[0].insertId);
+    console.log("NGO Name:", name);
+    console.log("Email:", email);
+    console.log("Status: applied");
+    console.log("Type:", ngo_type || 'multi_purpose');
+    console.log("Registration Number:", registration_number);
+    
+    // ✅ FIXED: Show success message and redirect
+    return res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Registration Successful - CareConnect</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+          }
+          .success-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+          }
+          .success-icon {
+            font-size: 80px;
+            color: #28a745;
+            margin-bottom: 20px;
+          }
+          .success-title {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: bold;
+          }
+          .success-message {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+          }
+          .highlight {
+            color: #667eea;
+            font-weight: bold;
+          }
+          .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.3s ease;
+          }
+          .btn:hover {
+            transform: translateY(-2px);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="success-container">
+          <div class="success-icon">✅</div>
+          <h1 class="success-title">Registration Successful!</h1>
+          <p class="success-message">
+            Thank you for registering your NGO <span class="highlight">"${name}"</span> with CareConnect.<br><br>
+            We will verify your details and registration certificate within <span class="highlight">24 hours</span>.<br><br>
+            You will receive an email notification once your NGO is approved and ready to accept donations.
+          </p>
+          <a href="/ngo-login" class="btn">Go to NGO Login</a>
+        </div>
+        <script>
+          // Auto-redirect after 10 seconds
+          setTimeout(function() {
+            window.location.href = "/ngo-login";
+          }, 10000);
+        </script>
+      </body>
+      </html>
+    `);
+    
   } catch (err) {
-    console.error("Error saving NGO to database:", err);
+    console.error("❌ Error saving NGO to database:", err);
+    console.error("Error details:", err.message);
+    console.error("Error code:", err.code);
     res.status(500).send("Internal Server Error");
   }
 });
-
-// ✅ VOLUNTEER REGISTRATION (ADDED)
-router.post("/volunteer-register", async (req, res) => {
-  const { name, email, phone, password, city, vehicle_type } = req.body;
-  
-  try {
-    // Check if volunteer already exists
-    const [checkRows] = await pool.query(
-      "SELECT * FROM volunteers WHERE email = ?", 
-      [email]
-    );
-    
-    if (checkRows.length > 0) {
-      return res.redirect("/volunteer-register?error=exists");
-    }
-
-    // Hash password and create volunteer
-    const hash = await bcrypt.hash(password, saltRounds);
-    await pool.query(
-      `INSERT INTO volunteers (name, email, phone, password, city, vehicle_type) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, email, phone, hash, city, vehicle_type]
-    );
-
-    res.redirect("/volunteer-login?success=registered");
-  } catch (err) {
-    console.error("Error in volunteer registration:", err);
-    res.redirect("/volunteer-register?error=server");
-  }
-});
+// Volunteer registration moved to volunteer.js to avoid duplication
 
 // Logout
 router.get("/logout", (req, res) => {
@@ -243,10 +348,11 @@ router.get("/logout", (req, res) => {
   });
 });
 
-// ✅ VOLUNTEER LOGOUT (ADDED)
+// Volunteer logout
 router.get("/volunteer-logout", (req, res) => {
   req.session.volunteer = null;
   res.redirect("/");
 });
+
 
 export default router;

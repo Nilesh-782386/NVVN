@@ -37,12 +37,18 @@
           <h2 class="head">Sign In for NGO</h2>
           <div class="namediv">
             <div class="fname">
-                <label for="name">Email</label><br>
-                <input type="email" id="name" name="email" placeholder="Enter your mail" autofocus >
+                <label for="email">Email</label><br>
+                <!-- ✅ FIXED: id="email" -->
+                <input type="email" id="email" name="email" placeholder="Enter your mail" autofocus >
             </div>
             <div class="lname">
-                <label for="name">Password</label><br>
-                <input type="password" id="name" placeholder="Enter your password" name="password">
+                <label for="password">Password</label><br>
+                <!-- ✅ FIXED: id="password" -->
+                <input type="password" id="password" placeholder="Enter your password" name="password">
+                <!-- ADD AFTER PASSWORD FIELD -->
+                <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                    Use your NGO Registration Number as password
+                </small>
             </div>
             <button type="submit" value="submit" class="but">Sign In</button>
           </form>
@@ -65,12 +71,13 @@
 </body>
 
 <script>
-
 document.getElementById("loginForm").addEventListener("submit", function(event) {
   event.preventDefault();
 
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
+
+  console.log("Submitting NGO login:", { email, password });
 
   fetch("/ngo-login", {
     method: "POST",
@@ -80,25 +87,24 @@ document.getElementById("loginForm").addEventListener("submit", function(event) 
     body: JSON.stringify({ email: email, password: password }),
   })
     .then(response => {
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
+      console.log("Response status:", response.status);
       return response.json();
     })
     .then(data => {
-      if (data.message === "Incorrect password") {
-        alert("Incorrect password. Please try again.");
-      } else if (data.message === "NGO not found") {
-        alert("NGO not found. Please check your email.");
+      console.log("Response data:", data);
+      
+      if (data.success) {
+        alert("Login successful! Redirecting...");
+        window.location.href = data.redirect || "/ngo-dashboard";
       } else {
-        // Redirect to the dashboard or perform other actions
+        alert(data.message || "Login failed. Please try again.");
       }
     })
     .catch(error => {
       console.error("There was a problem with the fetch operation:", error);
+      alert("Network error. Please try again.");
     });
 });
-
 </script>
 
 </html>

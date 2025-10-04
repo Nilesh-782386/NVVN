@@ -14,19 +14,35 @@
     <li class="nav-bar_item">
       <a href="/contact">Contact</a>
     </li>
-    <% if (!user && !ngo && !volunteer) { %>
+    <li class="nav-bar_item">
+      <a href="/system-status">System Status</a>
+    </li>
+    <% if (!user && !ngo && !volunteer && !admin) { %>
     <li class="nav-bar_item"><a href="/ngo-login">NGO Login</a></li>
     <li class="nav-bar_item"><a href="/user-login">User Login</a></li>
-    <li class="nav-bar_item"><a href="/volunteer-login">Volunteer</a></li>
+    <li class="nav-bar_item">
+      <a href="/volunteer-login" class="volunteer-link">
+        <span class="volunteer-main">VOLUNTEER</span>
+        <span class="volunteer-sub">LOGIN</span>
+      </a>
+    </li>
     <% } else { %>
       <% if (user) { %>
       <li class="nav-bar_item"><a href="/user">My Account</a></li>
+      <li class="nav-bar_item"><a href="/donation-history">Donation History</a></li>
+      <li class="nav-bar_item"><a href="/donate">New Donation</a></li>
       <% } %>
       <% if (ngo) { %>
       <li class="nav-bar_item"><a href="/ngo-dashboard">NGO Dashboard</a></li>
       <% } %>
       <% if (volunteer) { %>
       <li class="nav-bar_item"><a href="/volunteer-dashboard">Volunteer Dashboard</a></li>
+      <% } %>
+      <% if (admin) { %>
+      <li class="nav-bar_item"><a href="/admin/dashboard">Admin Dashboard</a></li>
+      <li class="nav-bar_item"><a href="/admin/volunteers">Manage Volunteers</a></li>
+      <% } %>
+      <% if (volunteer) { %>
       <li class="nav-bar_item"><a href="/volunteer-logout">Logout</a></li>
       <% } else { %>
       <li class="nav-bar_item"><a href="/logout">Logout</a></li>

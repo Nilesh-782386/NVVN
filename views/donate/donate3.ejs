@@ -84,15 +84,68 @@
     document.getElementById("myForm").addEventListener("submit", function(event) {
         const currentDate = new Date();
         const enteredDate = new Date(document.getElementsByName("date")[0].value.trim());
+        const timeSelected = document.querySelector('input[name="time"]:checked');
     
         // Check if the entered date is valid and not in the past
         if (isNaN(enteredDate.getTime()) || currentDate >= enteredDate) {
             event.preventDefault();
-            alert("Please enter a valid future date.");
-        } else {
-            alert("Thank you! Donation submitted successfully.");
+            showMessage("Please enter a valid future date.", "error");
+            return false;
         }
+        
+        // Check if time is selected
+        if (!timeSelected) {
+            event.preventDefault();
+            showMessage("Please select a pickup time.", "error");
+            return false;
+        }
+        
+        // Show success message
+        showMessage("Thank you! Your donation has been submitted successfully. A volunteer will contact you soon.", "success");
+        return true;
     });
+    
+    function showMessage(message, type) {
+        // Remove existing message container if any
+        const existingMessage = document.getElementById('messageContainer');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        // Create message container
+        const messageContainer = document.createElement('div');
+        messageContainer.id = 'messageContainer';
+        messageContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            text-align: center;
+        `;
+        
+        if (type === 'error') {
+            messageContainer.style.backgroundColor = '#ef5350';
+        } else {
+            messageContainer.style.backgroundColor = '#4caf50';
+        }
+        
+        messageContainer.textContent = message;
+        document.body.appendChild(messageContainer);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (messageContainer.parentNode) {
+                messageContainer.remove();
+            }
+        }, 5000);
+    }
     </script>
 
 

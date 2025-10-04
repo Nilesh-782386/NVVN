@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Registration - CareConnect</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .registration-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .form-section {
+            padding: 40px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .skills-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .skill-checkbox {
+            margin: 10px 0;
+        }
+        .skill-checkbox input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .navbar {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-heart me-2"></i>CareConnect
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link text-white" href="/">Home</a>
+                <a class="nav-link text-white" href="/volunteer-login">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="registration-container">
+            <div class="header">
+                <h1><i class="fas fa-hands-helping"></i> Volunteer Registration</h1>
+                <p>Join our community of volunteers and make a difference in people's lives</p>
+            </div>
+
+            <div class="form-section">
+                <div id="messageContainer"></div>
+
+                <form id="volunteerForm" action="/volunteer-register" method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" name="email" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Phone Number *</label>
+                                <input type="tel" class="form-control" name="phone" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">City *</label>
+                                <input type="text" class="form-control" name="city" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Vehicle Type *</label>
+                                <select class="form-control" name="vehicle_type" required>
+                                    <option value="">Select Vehicle</option>
+                                    <option value="2-wheeler">2-Wheeler (Bike/Scooter)</option>
+                                    <option value="4-wheeler">4-Wheeler (Car)</option>
+                                    <option value="public-transport">Public Transport</option>
+                                    <option value="walking">Walking</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Availability *</label>
+                                <select class="form-control" name="availability" required>
+                                    <option value="">Select Availability</option>
+                                    <option value="weekdays">Weekdays Only</option>
+                                    <option value="weekends">Weekends Only</option>
+                                    <option value="flexible">Flexible</option>
+                                    <option value="emergency">Emergency Only</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password *</label>
+                        <input type="password" class="form-control" name="password" required minlength="6">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password *</label>
+                        <input type="password" class="form-control" name="confirmPassword" required>
+                    </div>
+
+                    <div class="skills-section">
+                        <h5><i class="fas fa-tools"></i> Skills & Interests</h5>
+                        <p class="text-muted">Select your areas of expertise (optional)</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="skill-checkbox">
+                                    <input type="checkbox" name="skills" value="food-distribution" id="food">
+                                    <label for="food">Food Distribution</label>
+                                </div>
+                                <div class="skill-checkbox">
+                                    <input type="checkbox" name="skills" value="clothing-collection" id="clothing">
+                                    <label for="clothing">Clothing Collection</label>
+                                </div>
+                                <div class="skill-checkbox">
+                                    <input type="checkbox" name="skills" value="book-collection" id="books">
+                                    <label for="books">Book Collection</label>
+                                </div>
+                                <div class="skill-checkbox">
+                                    <input type="checkbox" name="skills" value="medical-supplies" id="medical">
+                                    <label for="medical">Medical Supplies</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="skill-checkbox">
+                                    <input type="checkbox" name="skills" value="logistics" id="logistics">
+                                    <label for="logistics">Logistics & Transport</label>
+                                </div>
+                                <div class="skill-checkbox">
+                                    <input type="checkbox" name="skills" value="communication" id="communication">
+                                    <label for="communication">Communication</label>
+                                </div>
+                                <div class="skill-checkbox">
+                                    <input type="checkbox" name="skills" value="coordination" id="coordination">
+                                    <label for="coordination">Event Coordination</label>
+                                </div>
+                                <div class="skill-checkbox">
+                                    <input type="checkbox" name="skills" value="other" id="other">
+                                    <label for="other">Other</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Additional Notes</label>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="Tell us about your motivation to volunteer, any special skills, or additional information..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#" class="text-primary">Terms and Conditions</a> and <a href="#" class="text-primary">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus"></i> Register as Volunteer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('volunteerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match!', 'error');
+                return;
+            }
+            
+            // Validate password strength
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters long!', 'error');
+                return;
+            }
+            
+            // Validate email format
+            const email = formData.get('email');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showMessage('Please enter a valid email address!', 'error');
+                return;
+            }
+            
+            // Validate phone number
+            const phone = formData.get('phone');
+            const phoneRegex = /^[0-9]{10}$/;
+            if (!phoneRegex.test(phone)) {
+                showMessage('Please enter a valid 10-digit phone number!', 'error');
+                return;
+            }
+            
+            // Submit form
+            fetch('/volunteer-register', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Registration successful! You can now login.', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/volunteer-login';
+                    }, 2000);
+                } else {
+                    showMessage(data.message || 'Registration failed. Please try again.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('An error occurred. Please try again.', 'error');
+            });
+        });
+        
+        function showMessage(message, type) {
+            const messageContainer = document.getElementById('messageContainer');
+            const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+            
+            messageContainer.innerHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                const alert = messageContainer.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

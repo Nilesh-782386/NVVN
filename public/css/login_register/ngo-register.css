@@ -83,25 +83,56 @@ nav .nav-bar .nav-bar_item a:hover:after {
 .maindiv,
 .line,
 .addhead,
-.buttons,
+.buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 30px 0;
+  padding: 20px 0;
+  clear: both;
+}
+
 .terms {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 20px 0;
 }
 
 button {
-  margin: 40px;
-  padding: 10px;
-  width: 200px;
+  margin: 20px;
+  padding: 15px 30px;
+  width: 250px;
   border-radius: 10px;
   background-color: #52a1d3;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 600;
   border: none;
-  margin-top: 40px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(82, 161, 211, 0.3);
 }
+
 button:hover {
   background-color: #d35279;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(211, 82, 121, 0.4);
+}
+
+.nextbut {
+  background: linear-gradient(135deg, #52a1d3 0%, #4a90c2 100%);
+  border: 2px solid #4a90c2;
+}
+
+.nextbut:hover {
+  background: linear-gradient(135deg, #d35279 0%, #c4456b 100%);
+  border-color: #c4456b;
+}
+
+.nextbut i {
+  margin-right: 8px;
+  font-size: 16px;
 }
 
 .topimg {
@@ -111,12 +142,14 @@ button:hover {
 }
 .parentdiv {
   width: 75vw;
-  height: 222vh;
+  min-height: 222vh;
   background-color: #ffffff;
   border-radius: 40px;
   padding: 10vw;
   padding-top: 4vw;
   margin-left: 5vw;
+  overflow: hidden;
+  position: relative;
 }
 
 .head {
@@ -238,4 +271,184 @@ s .fileupload {
 }
 .smurl {
   margin-bottom: 30px;
+}
+
+/* NGO Specialization Styles */
+.specialization-section {
+  margin: 30px 0;
+  padding: 25px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+  border: 2px solid #e0e7ff;
+  border-radius: 16px;
+  clear: both;
+  overflow: hidden;
+}
+
+.specialization-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.specialization-label i {
+  color: #667eea;
+  font-size: 1.2rem;
+}
+
+.specialization-description {
+  margin-bottom: 20px;
+}
+
+.specialization-description p {
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.specialization-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.specialization-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.specialization-card:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.specialization-card.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+}
+
+.specialization-card.selected::before {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: #667eea;
+  color: white;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.specialization-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: #f0f4ff;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+}
+
+.specialization-card.selected .specialization-icon {
+  background: #667eea;
+  color: white;
+}
+
+.specialization-icon i {
+  font-size: 1.5rem;
+  color: #667eea;
+  transition: all 0.3s ease;
+}
+
+.specialization-card.selected .specialization-icon i {
+  color: white;
+}
+
+.specialization-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.specialization-content p {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.specialization-content small {
+  display: block;
+  font-size: 0.8rem;
+  color: #28a745;
+  font-weight: 500;
+  background: #f0f9ff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e0f2fe;
+}
+
+.specialization-card.selected .specialization-content small {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border-color: #c8e6c9;
+}
+
+/* Mobile responsive for specialization */
+@media (max-width: 768px) {
+  .specialization-options {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .specialization-card {
+    padding: 15px;
+  }
+  
+  .specialization-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .specialization-icon i {
+    font-size: 1.2rem;
+  }
+  
+  .parentdiv {
+    width: 90vw;
+    margin-left: 5vw;
+    padding: 5vw;
+  }
+  
+  .buttons {
+    margin: 20px 0;
+    padding: 15px 0;
+  }
+  
+  button {
+    width: 200px;
+    padding: 12px 20px;
+    font-size: 16px;
+  }
 }

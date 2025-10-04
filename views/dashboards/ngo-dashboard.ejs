@@ -1,653 +1,143 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NGO Dashboard - CareConnect</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="/css/dashboard.css">
-    <style>
-        /* Notification Panel Styles */
-        .notification-panel {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 350px;
-            height: 100vh;
-            background: white;
-            box-shadow: -4px 0 15px rgba(0,0,0,0.1);
-            z-index: 9998;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .notification-panel.show {
-            transform: translateX(0);
-        }
-        
-        .notification-header {
-            padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .notification-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0;
-        }
-        
-        .notification-item {
-            padding: 15px 20px;
-            border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        
-        .notification-item:hover {
-            background: #f8f9fa;
-        }
-        
-        .notification-item.unread {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-        }
-        
-        .notification-footer {
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-top: 1px solid #dee2e6;
-        }
-        
-        .notification-bell:hover i {
-            transform: scale(1.1);
-            transition: transform 0.2s;
-        }
-        
-        /* UI/UX Enhancements - Smooth Transitions & Glowing Effects */
-        .section-card {
-            transition: all 0.3s ease;
-            animation: fadeInUp 0.6s ease-out;
-        }
-        
-        .section-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .btn {
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,123,255,0.4);
-        }
-        
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .btn:hover::before {
-            left: 100%;
-        }
-        
-        .stat-card {
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            border-color: rgba(255,255,255,0.2);
-        }
-        
-        .stat-card:hover .stat-icon i {
-            transform: rotate(360deg);
-            transition: transform 0.6s ease;
-        }
-        
-        .table-hover tbody tr {
-            transition: all 0.2s ease;
-        }
-        
-        .table-hover tbody tr:hover {
-            background-color: rgba(0,123,255,0.08) !important;
-            transform: scale(1.01);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .action-card {
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-        
-        .action-card:hover {
-            transform: translateY(-3px);
-            border-color: #007bff;
-            box-shadow: 0 8px 25px rgba(0,123,255,0.3);
-            text-decoration: none;
-        }
-        
-        .action-card:hover .action-icon {
-            transform: scale(1.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .volunteer-card, .donation-request-card {
-            transition: all 0.3s ease;
-            border: 1px solid #e9ecef;
-        }
-        
-        .volunteer-card:hover, .donation-request-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            border-color: #007bff;
-        }
-        
-        .map-container {
-            border-radius: 12px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .map-container:hover {
-            transform: scale(1.01);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        }
-        
-        .chart-container {
-            transition: all 0.3s ease;
-            border-radius: 8px;
-        }
-        
-        .chart-container:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-        
-        /* CareConnect Brand Colors */
-        .text-careconnect-primary { color: #e74c3c; }
-        .text-careconnect-secondary { color: #3498db; }
-        .bg-careconnect-primary { background-color: #e74c3c; }
-        .bg-careconnect-secondary { background-color: #3498db; }
-        
-        /* Pulse animation for notification badge */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        .notification-badge {
-            animation: pulse 2s infinite;
-        }
-        
-        /* Smooth slide animation for panels */
-        .slide-in-right {
-            animation: slideInRight 0.4s ease-out;
-        }
-        
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="dashboard-container">
-        <!-- Sidebar Navigation -->
-        <%- include("../partials/sidebar.ejs") %>
-        
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="dashboard-header">
-                <h1><i class="fas fa-heart text-primary"></i> NGO Dashboard</h1>
-                <p class="text-muted">Welcome, <%= ngo ? ngo.ngo_name : 'NGO' %></p>
-            </div>
+import express from "express";
+import { query } from "../db.js";
+import { ensureNGOAuthenticated } from "../middleware/auth.js";
 
-            <!-- Dashboard Stats -->
-            <div class="stats-grid">
-                <div class="stat-card bg-primary grid-item">
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><%= pendingDonations ? pendingDonations.length : 0 %></h3>
-                        <p>Pending Requests</p>
-                    </div>
-                </div>
-                <div class="stat-card bg-success grid-item">
-                    <div class="stat-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><%= confirmedDonations ? confirmedDonations.length : 0 %></h3>
-                        <p>Confirmed Donations</p>
-                    </div>
-                </div>
-                <div class="stat-card bg-info grid-item">
-                    <div class="stat-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><%= assignedVolunteers ? assignedVolunteers.length : 0 %></h3>
-                        <p>Assigned Volunteers</p>
-                    </div>
-                </div>
-                <div class="stat-card bg-warning grid-item">
-                    <div class="stat-icon">
-                        <i class="fas fa-truck"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><%= completedDonations ? completedDonations.length : 0 %></h3>
-                        <p>Completed</p>
-                    </div>
-                </div>
-            </div>
+const router = express.Router();
 
-            <!-- Donation Status Overview - Three Horizontal Cards -->
-            <div class="status-overview">
-                <h2 class="section-title"><i class="fas fa-clipboard-list text-primary"></i> Donation Management Overview</h2>
-                <div class="content-grid three-column">
-                    <!-- Pending Requests Card -->
-                    <div class="status-card pending-card">
-                        <div class="status-header">
-                            <h3><i class="fas fa-clock text-warning"></i> Pending Requests</h3>
-                            <span class="count-badge bg-warning"><%= pendingDonations ? pendingDonations.length : 0 %></span>
-                        </div>
-                        <div class="status-content">
-                            <% if (pendingDonations && pendingDonations.length > 0) { %>
-                                <% pendingDonations.slice(0, 3).forEach(donation => { %>
-                                <div class="status-item">
-                                    <div class="item-header">
-                                        <span class="item-id">#<%= donation.id %></span>
-                                        <span class="item-date"><%= new Date(donation.created_at).toLocaleDateString() %></span>
-                                    </div>
-                                    <div class="item-content">
-                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.fname %> <%= donation.lname %></p>
-                                        <p class="location"><i class="fas fa-map-marker-alt"></i> <%= donation.city %>, <%= donation.state %></p>
-                                        <div class="item-badges">
-                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
-                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
-                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
-                                        </div>
-                                    </div>
-                                </div>
-                                <% }); %>
-                                <% if (pendingDonations.length > 3) { %>
-                                <div class="view-more">
-                                    <button class="btn btn-outline-warning btn-sm" onclick="viewAllPending()">
-                                        <i class="fas fa-plus"></i> View <%= pendingDonations.length - 3 %> More
-                                    </button>
-                                </div>
-                                <% } %>
-                            <% } else { %>
-                                <div class="empty-state">
-                                    <i class="fas fa-clock fa-2x text-muted mb-2"></i>
-                                    <p class="text-muted">No pending requests</p>
-                                </div>
-                            <% } %>
-                        </div>
-                    </div>
+// NGO Dashboard Main Page - KEEP ALL FEATURES, JUST FIX VARIABLE NAMES
+router.get("/ngo-dashboard", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    const ngoId = req.session.user.id;
+    
+    // Get NGO details
+    const ngoResult = await query(
+      "SELECT * FROM ngo_register WHERE id = ?",
+      [ngoId]
+    );
+    
+    const ngo = ngoResult[0] && ngoResult[0][0];
+    
+    // KEEP ALL THE COMPREHENSIVE QUERIES BUT RENAME VARIABLES TO MATCH EJS
+    const pendingResult = await query(`
+      SELECT d.*, u.fullname as donor_name, v.name as volunteer_name, v.phone as volunteer_phone
+      FROM donations d
+      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      WHERE d.status = 'pending'
+      ORDER BY d.created_at DESC
+    `);
+    
+    const confirmedResult = await query(`
+      SELECT d.*, u.fullname as donor_name, v.name as volunteer_name, v.phone as volunteer_phone
+      FROM donations d
+      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      WHERE d.status IN ('assigned', 'picked_up', 'in_transit')
+      ORDER BY 
+        CASE 
+          WHEN d.status = 'assigned' THEN 1
+          WHEN d.status = 'picked_up' THEN 2
+          WHEN d.status = 'in_transit' THEN 3
+          ELSE 4
+        END,
+        d.created_at DESC
+    `);
+    
+    const completedResult = await query(`
+      SELECT d.*, u.fullname as donor_name, v.name as volunteer_name, v.phone as volunteer_phone
+      FROM donations d
+      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      WHERE d.status IN ('delivered', 'completed')
+      ORDER BY d.created_at DESC
+    `);
+    
+    const volunteersResult = await query(`
+      SELECT DISTINCT volunteer_name, volunteer_phone, 
+             COUNT(*) as active_donations,
+             MIN(city) as city
+      FROM donations 
+      WHERE volunteer_name IS NOT NULL 
+        AND status IN ('assigned', 'picked_up', 'in_transit')
+      GROUP BY volunteer_name, volunteer_phone
+    `);
+    
+    // RENDER WITH COMPREHENSIVE DATA BUT MATCHING EJS VARIABLE NAMES
+    res.render("dashboards/ngo-dashboard", {
+      currentPage: 'ngo-dashboard',
+      ngo: ngo,
+      pendingDonations: pendingResult[0] || [],
+      confirmedDonations: confirmedResult[0] || [],
+      completedDonations: completedResult[0] || [],
+      assignedVolunteers: volunteersResult[0] || []
+    });
+    
+  } catch (err) {
+    console.error("NGO Dashboard error:", err);
+    res.status(500).send("Server error");
+  }
+});
 
-                    <!-- Confirmed Donations Card -->
-                    <div class="status-card confirmed-card">
-                        <div class="status-header">
-                            <h3><i class="fas fa-check-circle text-success"></i> Confirmed Donations</h3>
-                            <span class="count-badge bg-success"><%= confirmedDonations ? confirmedDonations.length : 0 %></span>
-                        </div>
-                        <div class="status-content">
-                            <% if (confirmedDonations && confirmedDonations.length > 0) { %>
-                                <% confirmedDonations.slice(0, 3).forEach(donation => { %>
-                                <div class="status-item">
-                                    <div class="item-header">
-                                        <span class="item-id">#<%= donation.id %></span>
-                                        <span class="status-badge bg-<%= donation.status === 'assigned' ? 'info' : 'primary' %>">
-                                            <%= donation.status === 'assigned' ? 'Assigned' : 'Picked Up' %>
-                                        </span>
-                                    </div>
-                                    <div class="item-content">
-                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.fname %> <%= donation.lname %></p>
-                                        <% if (donation.volunteer_name) { %>
-                                        <p class="volunteer-info"><i class="fas fa-hands-helping"></i> <%= donation.volunteer_name %></p>
-                                        <% } %>
-                                        <div class="item-badges">
-                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
-                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
-                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
-                                        </div>
-                                    </div>
-                                </div>
-                                <% }); %>
-                                <% if (confirmedDonations.length > 3) { %>
-                                <div class="view-more">
-                                    <button class="btn btn-outline-success btn-sm" onclick="viewAllConfirmed()">
-                                        <i class="fas fa-plus"></i> View <%= confirmedDonations.length - 3 %> More
-                                    </button>
-                                </div>
-                                <% } %>
-                            <% } else { %>
-                                <div class="empty-state">
-                                    <i class="fas fa-check-circle fa-2x text-muted mb-2"></i>
-                                    <p class="text-muted">No confirmed donations</p>
-                                </div>
-                            <% } %>
-                        </div>
-                    </div>
+// KEEP ALL API ENDPOINTS FOR FULL FUNCTIONALITY
+router.get("/api/ngo/dashboard-data", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    const ngoId = req.session.user.id;
+    
+    const statsResult = await query(`
+      SELECT 
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+        COUNT(CASE WHEN status = 'assigned' THEN 1 END) as assigned,
+        COUNT(CASE WHEN status = 'picked_up' THEN 1 END) as picked_up,
+        COUNT(CASE WHEN status = 'in_transit' THEN 1 END) as in_transit,
+        COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
+      FROM donations 
+    `);
+    
+    const stats = statsResult[0] && statsResult[0][0] ? statsResult[0][0] : {};
+    
+    res.json({ stats: stats });
+    
+  } catch (err) {
+    console.error("NGO API error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
-                    <!-- Completed Donations Card -->
-                    <div class="status-card completed-card">
-                        <div class="status-header">
-                            <h3><i class="fas fa-trophy text-info"></i> Completed Donations</h3>
-                            <span class="count-badge bg-info"><%= completedDonations ? completedDonations.length : 0 %></span>
-                        </div>
-                        <div class="status-content">
-                            <% if (completedDonations && completedDonations.length > 0) { %>
-                                <% completedDonations.slice(0, 3).forEach(donation => { %>
-                                <div class="status-item">
-                                    <div class="item-header">
-                                        <span class="item-id">#<%= donation.id %></span>
-                                        <span class="completion-date"><%= new Date(donation.updated_at).toLocaleDateString() %></span>
-                                    </div>
-                                    <div class="item-content">
-                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.fname %> <%= donation.lname %></p>
-                                        <% if (donation.volunteer_name) { %>
-                                        <p class="volunteer-info"><i class="fas fa-hands-helping"></i> <%= donation.volunteer_name %></p>
-                                        <% } %>
-                                        <div class="item-badges">
-                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
-                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
-                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
-                                        </div>
-                                    </div>
-                                </div>
-                                <% }); %>
-                                <% if (completedDonations.length > 3) { %>
-                                <div class="view-more">
-                                    <button class="btn btn-outline-info btn-sm" onclick="viewAllCompleted()">
-                                        <i class="fas fa-plus"></i> View <%= completedDonations.length - 3 %> More
-                                    </button>
-                                </div>
-                                <% } %>
-                            <% } else { %>
-                                <div class="empty-state">
-                                    <i class="fas fa-trophy fa-2x text-muted mb-2"></i>
-                                    <p class="text-muted">No completed donations yet</p>
-                                </div>
-                            <% } %>
-                        </div>
-                    </div>
-                </div>
-            </div>
+router.post("/api/ngo/assign-donation/:id", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    const donationId = req.params.id;
+    const ngoId = req.session.user.id;
+    
+    await query(
+      "UPDATE donations SET ngo_id = ? WHERE id = ? AND ngo_id IS NULL",
+      [ngoId, donationId]
+    );
+    
+    res.json({ success: true, message: "Donation assigned to your NGO!" });
+    
+  } catch (err) {
+    console.error("Assign donation error:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
 
-            <!-- Detailed Donations Table -->
-            <div class="section-card">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2><i class="fas fa-table text-primary"></i> Detailed Donations Table</h2>
-                    <div class="donation-filters">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <select id="statusFilter" class="form-select form-select-sm" onchange="applyDonationFilters()">
-                                    <option value="">All Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="assigned">Assigned</option>
-                                    <option value="picked_up">Picked Up</option>
-                                    <option value="delivered">Delivered</option>
-                                    <option value="completed">Completed</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="text" id="volunteerSearch" class="form-control form-control-sm" placeholder="Search volunteer..." onkeyup="applyDonationFilters()">
-                            </div>
-                            <div class="col-md-4">
-                                <select id="categoryFilter" class="form-select form-select-sm" onchange="applyDonationFilters()">
-                                    <option value="">All Categories</option>
-                                    <option value="Books">📚 Books</option>
-                                    <option value="Clothes">👕 Clothes</option>
-                                    <option value="Food">🍎 Food</option>
-                                    <option value="Toys">🧸 Toys</option>
-                                    <option value="Medicine">💊 Medicine</option>
-                                    <option value="Money">💰 Money</option>
-                                    <option value="Electronics">💻 Electronics</option>
-                                    <option value="School Supplies">✏️ School Supplies</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Donor</th>
-                                <th>Items</th>
-                                <th>Volunteer</th>
-                                <th>Status</th>
-                                <th>Pickup Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% if (confirmedDonations && confirmedDonations.length > 0) { %>
-                                <% confirmedDonations.forEach(donation => { %>
-                                <tr>
-                                    <td>#<%= donation.id %></td>
-                                    <td>
-                                        <strong><%= donation.fname %> <%= donation.lname %></strong><br>
-                                        <small class="text-muted"><%= donation.email %></small>
-                                    </td>
-                                    <td>
-                                        <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
-                                        <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
-                                        <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
-                                        <% if (donation.toys > 0) { %><span class="badge bg-primary">Toys: <%= donation.toys %></span> <% } %>
-                                        <% if (donation.footwear > 0) { %><span class="badge bg-dark">Footwear: <%= donation.footwear %></span> <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (donation.volunteer_name) { %>
-                                            <strong><%= donation.volunteer_name %></strong><br>
-                                            <small class="text-muted"><%= donation.volunteer_phone %></small>
-                                        <% } else { %>
-                                            <span class="text-muted">Not assigned</span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-<%= getStatusColor(donation.status) %>">
-                                            <%= donation.status.charAt(0).toUpperCase() + donation.status.slice(1) %>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <% if (donation.pickup_date) { %>
-                                            <%= new Date(donation.pickup_date).toLocaleDateString() %>
-                                            <% if (donation.pickup_time) { %>
-                                                <br><small><%= donation.pickup_time %></small>
-                                            <% } %>
-                                        <% } else { %>
-                                            <span class="text-muted">Not scheduled</span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="viewDetails(<%= donation.id %>)">
-                                            <i class="fas fa-eye"></i> View
-                                        </button>
-                                        <% if (donation.status === 'assigned') { %>
-                                        <button class="btn btn-sm btn-success" onclick="markCompleted(<%= donation.id %>)">
-                                            <i class="fas fa-check"></i> Complete
-                                        </button>
-                                        <% } %>
-                                    </td>
-                                </tr>
-                                <% }); %>
-                            <% } else { %>
-                                <tr>
-                                    <td colspan="7" class="text-center py-4">
-                                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-                                        <p class="text-muted">No confirmed donations yet</p>
-                                    </td>
-                                </tr>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+router.post("/api/ngo/receive-donation/:id", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    const donationId = req.params.id;
+    const ngoId = req.session.user.id;
+    
+    await query(
+      "UPDATE donations SET status = 'completed' WHERE id = ? AND ngo_id = ?",
+      [donationId, ngoId]
+    );
+    
+    res.json({ success: true, message: "Donation marked as received!" });
+    
+  } catch (err) {
+    console.error("Receive donation error:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
 
-            <!-- Assigned Volunteers Section -->
-            <div class="section-card">
-                <h2><i class="fas fa-users text-info"></i> Assigned Volunteers</h2>
-                <div class="cards-grid">
-                    <% if (assignedVolunteers && assignedVolunteers.length > 0) { %>
-                        <% assignedVolunteers.forEach(volunteer => { %>
-                        <div class="volunteer-card grid-item">
-                            <div class="volunteer-avatar">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div class="volunteer-info">
-                                <h5><%= volunteer.volunteer_name %></h5>
-                                <p class="text-muted mb-1">
-                                    <i class="fas fa-phone"></i> <%= volunteer.volunteer_phone %>
-                                </p>
-                                <p class="text-muted mb-2">
-                                    <i class="fas fa-map-marker-alt"></i> <%= volunteer.city || 'Location not specified' %>
-                                </p>
-                                <div class="volunteer-stats">
-                                    <span class="badge bg-primary">
-                                        Active: <%= volunteer.active_donations || 0 %> donations
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <% }); %>
-                    <% } else { %>
-                        <div class="grid-span-full text-center py-4">
-                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">No volunteers assigned yet</p>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-
-            <!-- Analytics & Reports -->
-            <div class="section-card">
-                <h2><i class="fas fa-chart-line text-info"></i> Analytics & Reports</h2>
-                <div class="charts-grid four-column">
-                    <div class="chart-container grid-item">
-                        <h5><i class="fas fa-pie-chart"></i> Donation Status Distribution</h5>
-                        <canvas id="donationStatusChart" style="height: 300px;"></canvas>
-                    </div>
-                    <div class="chart-container grid-item">
-                        <h5><i class="fas fa-chart-bar"></i> Monthly Donation Trends</h5>
-                        <canvas id="monthlyTrendsChart" style="height: 300px;"></canvas>
-                    </div>
-                    <div class="chart-container grid-item">
-                        <h5><i class="fas fa-users"></i> Active Volunteers</h5>
-                        <canvas id="volunteersChart" style="height: 300px;"></canvas>
-                    </div>
-                    <div class="chart-container grid-item">
-                        <h5><i class="fas fa-boxes"></i> Items Donated</h5>
-                        <canvas id="itemsChart" style="height: 300px;"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NGO Network Map - Full Width -->
-            <div class="section-card full-width-map">
-                <h2><i class="fas fa-map text-success"></i> NGO Network & Volunteer Routes</h2>
-                <div class="map-container full-width">
-                    <div id="ngoNetworkMap" style="height: 70vh; width: 100%; border-radius: 8px;"></div>
-                </div>
-                <div class="map-legend mt-3">
-                    <div class="row text-center">
-                        <div class="col-md-4">
-                            <i class="fas fa-home text-primary"></i>
-                            <small class="d-block">NGO Locations</small>
-                        </div>
-                        <div class="col-md-4">
-                            <i class="fas fa-user text-success"></i>
-                            <small class="d-block">Volunteers</small>
-                        </div>
-                        <div class="col-md-4">
-                            <i class="fas fa-route text-warning"></i>
-                            <small class="d-block">Active Routes</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notification Panel -->
-    <div id="notificationPanel" class="notification-panel" style="display: none;">
-        <div class="notification-header">
-            <h5><i class="fas fa-bell"></i> Notifications</h5>
-            <button class="btn-close" onclick="closeNotificationPanel()"></button>
-        </div>
-        <div id="notificationList" class="notification-list">
-            <!-- Notifications will be loaded here -->
-        </div>
-        <div class="notification-footer">
-            <button class="btn btn-sm btn-primary" onclick="markAllAsRead()">Mark all as read</button>
-        </div>
-    </div>
-
-    <!-- Notification Toast Container -->
-    <div id="notificationToastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/js/sidebar.js"></script>
-    <script src="/js/enhanced-notifications.js"></script>
-    <script src="/js/dashboard-animations.js"></script>
-    <script src="/js/ngo-dashboard.js"></script>
-</body>
-</html>
-
-<% 
-function getStatusColor(status) {
-    switch(status) {
-        case 'pending': return 'warning';
-        case 'assigned': return 'info';
-        case 'picked_up': return 'primary';
-        case 'delivered': return 'success';
-        case 'completed': return 'success';
-        default: return 'secondary';
-    }
-}
-%>
+export default router;

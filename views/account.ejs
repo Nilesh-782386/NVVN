@@ -24,12 +24,22 @@
       <div class="left-side">
         <img id="idimage" src="img/user.png" alt="img1" >
         <div class="details">
-          <p class="topic">User Name: suraj gitte</p>
-          <p class="topic">Email ID: suraj.gitte23@gmail.com</p>
-          <p class="topic">Phone NO:7823865118</p>
+          <p class="topic">User Name: <%= user.fullname %></p>
+          <p class="topic">Email ID: <%= user.email %></p>
+          <p class="topic">Phone NO: <%= user.phone %></p>
           <p class="topic">Points: 400 </p>
           <p class="topic">No Of Donations: 01</p>
-          <p class="topic">Address:pune , maharastra - 411037</p>
+          <p class="topic">Address: <%= user.address %></p>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="quick-actions mt-4">
+          <a href="/donate" class="btn btn-primary mb-2 w-100">
+            <i class="fas fa-plus"></i> New Donation
+          </a>
+          <a href="/donation-history" class="btn btn-outline-primary w-100">
+            <i class="fas fa-history"></i> View History
+          </a>
         </div>
         
       </div>

@@ -30,12 +30,14 @@
         <form method="post" action="/ngo-register" enctype="multipart/form-data" id="myForm" >
             <div class="namediv">
                 <div class="fname">
-                    <label for="name">Name of Ngo</label><br>
-                    <input type="text" id="name" name="name" value="Avishkar" required>
+                    <label for="ngo_name">Name of Ngo</label><br>
+                    <!-- ✅ FIXED: id="ngo_name" -->
+                    <input type="text" id="ngo_name" name="name" value="Avishkar" required>
                 </div>
                 <div class="lname">
-                    <label for="name">Registration Number</label><br>
-                    <input type="tel" id="name" name="registration_number" value="" required>
+                    <label for="registration_number">Registration Number</label><br>
+                    <!-- ✅ FIXED: id="registration_number" -->
+                    <input type="tel" id="registration_number" name="registration_number" value="" required>
                 </div>
             </div>
             <div class="emaildiv">
@@ -97,8 +99,84 @@
                     <textarea id="optnote" name="optnote" rows="5" cols="93"></textarea>
                 </div>
 
+                <!-- NGO Specialization Selection -->
+                <div class="specialization-section">
+                    <label for="specialization" class="specialization-label">
+                        <i class="fas fa-bullseye"></i> NGO Specialization
+                    </label>
+                    <div class="specialization-description">
+                        <p>Select your NGO's primary focus area. This determines which donation items you can approve.</p>
+                    </div>
+                    <div class="specialization-options">
+                        <div class="specialization-card" data-value="food">
+                            <div class="specialization-icon">
+                                <i class="fas fa-apple-alt"></i>
+                            </div>
+                            <div class="specialization-content">
+                                <h4>🍎 Food NGO</h4>
+                                <p>Specializes in: Food, Grains, Water</p>
+                                <small>Can approve: Food, Grains, Medicine, Water</small>
+                            </div>
+                        </div>
+                        
+                        <div class="specialization-card" data-value="clothing">
+                            <div class="specialization-icon">
+                                <i class="fas fa-tshirt"></i>
+                            </div>
+                            <div class="specialization-content">
+                                <h4>👕 Clothing NGO</h4>
+                                <p>Specializes in: Clothes, Blankets, Footwear</p>
+                                <small>Can approve: Clothes, Blankets, Footwear, Food, Medicine, Water</small>
+                            </div>
+                        </div>
+                        
+                        <div class="specialization-card" data-value="education">
+                            <div class="specialization-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="specialization-content">
+                                <h4>📚 Education NGO</h4>
+                                <p>Specializes in: Books, School Supplies, Toys</p>
+                                <small>Can approve: Books, School Supplies, Toys, Food, Medicine, Water</small>
+                            </div>
+                        </div>
+                        
+                        <div class="specialization-card" data-value="medical">
+                            <div class="specialization-icon">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <div class="specialization-content">
+                                <h4>🏥 Medical NGO</h4>
+                                <p>Specializes in: Medicines, Medical Equipment</p>
+                                <small>Can approve: Medicines, Medical Equipment, Food, Water</small>
+                            </div>
+                        </div>
+                        
+                        <div class="specialization-card" data-value="elderly_care">
+                            <div class="specialization-icon">
+                                <i class="fas fa-user-friends"></i>
+                            </div>
+                            <div class="specialization-content">
+                                <h4>👴 Elderly Care NGO</h4>
+                                <p>Specializes in: Food, Medicine, Clothes</p>
+                                <small>Can approve: Food, Medicine, Clothes, Water</small>
+                            </div>
+                        </div>
+                        
+                        <div class="specialization-card" data-value="multi_purpose">
+                            <div class="specialization-icon">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <div class="specialization-content">
+                                <h4>🔄 Multi-purpose NGO</h4>
+                                <p>Specializes in: All Items</p>
+                                <small>Can approve: All donation items</small>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="ngo_type" name="ngo_type" value="multi_purpose" required>
+                </div>
                 
-            
                 <div class="url">
                     <label for="url">Website Url</label><br>
                     <input type="url" id="url" name="url" class="medinput" required>
@@ -122,12 +200,15 @@
                 
             </div>
 
-    </div>
+        </div>
 
-</div>
-<div class="buttons"> 
-    
-    <button type="submit" value="submit" class="nextbut">Register</button>
+        <!-- Registration Button Section -->
+        <div class="buttons"> 
+            <button type="submit" value="submit" class="nextbut">
+                <i class="fas fa-user-plus"></i> Register NGO
+            </button>
+        </div>
+    </div>
 </div>
 </form>
 
@@ -138,6 +219,33 @@
    alert("We Will verify your Details and your Ngo In next 24 Hours");
   });
   
+  // NGO Specialization Selection
+  document.addEventListener('DOMContentLoaded', function() {
+    const specializationCards = document.querySelectorAll('.specialization-card');
+    const ngoTypeInput = document.getElementById('ngo_type');
+    
+    // Set default selection
+    const defaultCard = document.querySelector('.specialization-card[data-value="multi_purpose"]');
+    if (defaultCard) {
+      defaultCard.classList.add('selected');
+    }
+    
+    specializationCards.forEach(card => {
+      card.addEventListener('click', function() {
+        // Remove selected class from all cards
+        specializationCards.forEach(c => c.classList.remove('selected'));
+        
+        // Add selected class to clicked card
+        this.classList.add('selected');
+        
+        // Update hidden input value
+        const value = this.getAttribute('data-value');
+        ngoTypeInput.value = value;
+        
+        console.log('Selected NGO type:', value);
+      });
+    });
+  });
+  
 </script>
 </html>
-

@@ -21,3 +21,11 @@ export function ensureVolunteerAuthenticated(req, res, next) {
   }
   return res.redirect("/volunteer-login");
 }
+
+// Middleware to check if admin is authenticated
+export function ensureAdminAuthenticated(req, res, next) {
+  if (req.session && req.session.admin) {
+    return next();
+  }
+  return res.redirect("/admin-login");
+}

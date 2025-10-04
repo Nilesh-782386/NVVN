@@ -4,35 +4,240 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Volunteer Login</title>
+  <title>Volunteer Login - CareConnect</title>
   <link rel="icon" href="/img/logo.svg" type="image/x-icons" />
   <link rel="stylesheet" href="/css/index.css">
   <link rel="stylesheet" href="/css/volunteer.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .volunteer-login-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .login-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+      max-width: 400px;
+      width: 100%;
+    }
+    
+    .login-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      padding: 40px 30px;
+      text-align: center;
+    }
+    
+    .login-header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    
+    .login-header p {
+      margin: 10px 0 0 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .volunteer-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      opacity: 0.9;
+    }
+    
+    .login-form {
+      padding: 40px 30px;
+    }
+    
+    .form-group {
+      margin-bottom: 25px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #374151;
+      font-size: 14px;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    
+    .login-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+    }
+    
+    .register-link {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    
+    .register-link a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .register-link a:hover {
+      text-decoration: underline;
+    }
+    
+    .features {
+      background: #f8fafc;
+      padding: 30px;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    .features h3 {
+      margin: 0 0 20px 0;
+      color: #374151;
+      font-size: 18px;
+      text-align: center;
+    }
+    
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    
+    .feature-list i {
+      color: #4f46e5;
+      margin-right: 12px;
+      width: 16px;
+    }
+    
+    .error-message {
+      background: #fef2f2;
+      color: #dc2626;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #fecaca;
+      font-size: 14px;
+    }
+    
+    .success-message {
+      background: #f0fdf4;
+      color: #16a34a;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #bbf7d0;
+      font-size: 14px;
+    }
+  </style>
 </head>
-<body class="volunteer-page">
-  <%- include("../partials/navbar.ejs", { user, ngo, volunteer }) %>
-  <div class="auth-hero">
-    <h1 class="auth-title">Volunteer Login</h1>
-    <p class="auth-subtitle">Welcome back. Please enter your credentials to continue.</p>
-  </div>
-  <main class="auth-container">
-    <div class="auth-card">
-      <form method="post" action="/volunteer-login">
-        <div class="form-group" style="margin: 12px 0;">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" required class="form-control">
+<body>
+  <div class="volunteer-login-page">
+    <div class="login-container">
+      <div class="login-header">
+        <div class="volunteer-icon">
+          <i class="fas fa-hands-helping"></i>
         </div>
-        <div class="form-group" style="margin: 12px 0;">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" required class="form-control">
+        <h1>Volunteer Login</h1>
+        <p>Join hands to make a difference</p>
+      </div>
+      
+      <div class="login-form">
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <%= error === 'invalid' ? 'Invalid email or password' : 'Login failed. Please try again.' %>
+          </div>
+        <% } %>
+        
+        <% if (typeof success !== 'undefined' && success) { %>
+          <div class="success-message">
+            <i class="fas fa-check-circle"></i>
+            <%= success === 'registered' ? 'Registration successful! Please login.' : 'Login successful!' %>
+          </div>
+        <% } %>
+        
+        <form method="post" action="/volunteer-login">
+          <div class="form-group">
+            <label for="email">
+              <i class="fas fa-envelope"></i> Email Address
+            </label>
+            <input id="email" name="email" type="email" required class="form-control" 
+                   placeholder="Enter your email address">
+          </div>
+          
+          <div class="form-group">
+            <label for="password">
+              <i class="fas fa-lock"></i> Password
+            </label>
+            <input id="password" name="password" type="password" required class="form-control" 
+                   placeholder="Enter your password">
+          </div>
+          
+          <button type="submit" class="login-btn">
+            <i class="fas fa-sign-in-alt"></i> Login to Dashboard
+          </button>
+        </form>
+        
+        <div class="register-link">
+          New volunteer? <a href="/volunteer-register">Create your account</a>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px;">
-          <button type="submit" class="btn btn-primary">Login</button>
-          <span class="helper">New here? <a class="link" href="/volunteer-register">Create an account</a></span>
-        </div>
-      </form>
+      </div>
+      
+      <div class="features">
+        <h3>Why Volunteer with Us?</h3>
+        <ul class="feature-list">
+          <li><i class="fas fa-heart"></i> Make a real impact in your community</li>
+          <li><i class="fas fa-clock"></i> Flexible volunteering hours</li>
+          <li><i class="fas fa-trophy"></i> Track your contributions and impact</li>
+          <li><i class="fas fa-users"></i> Connect with like-minded volunteers</li>
+        </ul>
+      </div>
     </div>
-  </main>
+  </div>
 </body>
 </html>
 

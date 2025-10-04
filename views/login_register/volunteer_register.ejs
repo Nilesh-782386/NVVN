@@ -4,61 +4,300 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Volunteer Register</title>
+  <title>Volunteer Registration - CareConnect</title>
   <link rel="icon" href="/img/logo.svg" type="image/x-icons" />
   <link rel="stylesheet" href="/css/index.css">
   <link rel="stylesheet" href="/css/volunteer.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .volunteer-register-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .register-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    .register-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      padding: 40px 30px;
+      text-align: center;
+    }
+    
+    .register-header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    
+    .register-header p {
+      margin: 10px 0 0 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .volunteer-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      opacity: 0.9;
+    }
+    
+    .register-form {
+      padding: 40px 30px;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #374151;
+      font-size: 14px;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    
+    .register-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    
+    .register-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+    }
+    
+    .login-link {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    
+    .login-link a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+    
+    .benefits {
+      background: #f8fafc;
+      padding: 30px;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    .benefits h3 {
+      margin: 0 0 20px 0;
+      color: #374151;
+      font-size: 18px;
+      text-align: center;
+    }
+    
+    .benefit-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .benefit-list li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    
+    .benefit-list i {
+      color: #4f46e5;
+      margin-right: 12px;
+      width: 16px;
+    }
+    
+    .error-message {
+      background: #fef2f2;
+      color: #dc2626;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #fecaca;
+      font-size: 14px;
+    }
+    
+    .success-message {
+      background: #f0fdf4;
+      color: #16a34a;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #bbf7d0;
+      font-size: 14px;
+    }
+    
+    @media (max-width: 600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
-<body class="volunteer-page">
-  <%- include("../partials/navbar.ejs", { user, ngo, volunteer }) %>
-  <div class="auth-hero">
-    <h1 class="auth-title">Create a Volunteer Account</h1>
-    <p class="auth-subtitle">Join CareConnect and start helping donors deliver to NGOs.</p>
-  </div>
-  <main class="auth-container">
-    <div class="auth-card">
-      <form method="post" action="/volunteer-register">
-        <div class="auth-grid">
-          <div class="form-group">
-            <label for="name">Full Name</label>
-            <input id="name" name="name" type="text" required class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" required class="form-control">
-          </div>
+<body>
+  <div class="volunteer-register-page">
+    <div class="register-container">
+      <div class="register-header">
+        <div class="volunteer-icon">
+          <i class="fas fa-user-plus"></i>
         </div>
-        <div class="auth-grid" style="margin-top:12px;">
-          <div class="form-group">
-            <label for="phone">Phone</label>
-            <input id="phone" name="phone" type="tel" required class="form-control">
+        <h1>Join as Volunteer</h1>
+        <p>Be the bridge between donors and NGOs</p>
+      </div>
+      
+      <div class="register-form">
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <%= error === 'exists' ? 'Email already registered' : 'Registration failed. Please try again.' %>
           </div>
-          <div class="form-group">
-            <label for="city">Location / City</label>
-            <input id="city" name="city" type="text" required class="form-control">
+        <% } %>
+        
+        <% if (typeof success !== 'undefined' && success) { %>
+          <div class="success-message">
+            <i class="fas fa-check-circle"></i>
+            Registration successful! Please login to continue.
           </div>
+        <% } %>
+        
+        <form method="post" action="/volunteer-register">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">
+                <i class="fas fa-user"></i> Full Name
+              </label>
+              <input id="name" name="name" type="text" required class="form-control" 
+                     placeholder="Enter your full name">
+            </div>
+            
+            <div class="form-group">
+              <label for="email">
+                <i class="fas fa-envelope"></i> Email Address
+              </label>
+              <input id="email" name="email" type="email" required class="form-control" 
+                     placeholder="Enter your email">
+            </div>
+          </div>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="phone">
+                <i class="fas fa-phone"></i> Phone Number
+              </label>
+              <input id="phone" name="phone" type="tel" required class="form-control" 
+                     placeholder="Enter your phone number">
+            </div>
+            
+            <div class="form-group">
+              <label for="city">
+                <i class="fas fa-map-marker-alt"></i> City
+              </label>
+              <input id="city" name="city" type="text" required class="form-control" 
+                     placeholder="Enter your city">
+            </div>
+          </div>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="vehicle_type">
+                <i class="fas fa-car"></i> Vehicle Type
+              </label>
+              <select id="vehicle_type" name="vehicle_type" class="form-control" required>
+                <option value="">Select your vehicle</option>
+                <option value="2-wheeler">2-wheeler (Bike/Scooter)</option>
+                <option value="4-wheeler">4-wheeler (Car)</option>
+                <option value="none">No vehicle</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="password">
+                <i class="fas fa-lock"></i> Password
+              </label>
+              <input id="password" name="password" type="password" required class="form-control" 
+                     placeholder="Create a password">
+            </div>
+          </div>
+          
+          <button type="submit" class="register-btn">
+            <i class="fas fa-user-plus"></i> Create Volunteer Account
+          </button>
+        </form>
+        
+        <div class="login-link">
+          Already have an account? <a href="/volunteer-login">Login here</a>
         </div>
-        <div class="auth-grid" style="margin-top:12px;">
-          <div class="form-group">
-            <label for="vehicle_type">Vehicle Type</label>
-            <select id="vehicle_type" name="vehicle_type" class="form-control" required>
-              <option value="">Select vehicle</option>
-              <option value="2-wheeler">2-wheeler</option>
-              <option value="4-wheeler">4-wheeler</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input id="password" name="password" type="password" required class="form-control">
-          </div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;">
-          <button type="submit" class="btn btn-primary">Register</button>
-          <span class="helper">Already have an account? <a class="link" href="/volunteer-login">Login</a></span>
-        </div>
-      </form>
+      </div>
+      
+      <div class="benefits">
+        <h3>Volunteer Benefits</h3>
+        <ul class="benefit-list">
+          <li><i class="fas fa-heart"></i> Make a meaningful impact in your community</li>
+          <li><i class="fas fa-clock"></i> Choose your own volunteering schedule</li>
+          <li><i class="fas fa-trophy"></i> Earn recognition for your contributions</li>
+          <li><i class="fas fa-users"></i> Connect with NGOs and fellow volunteers</li>
+          <li><i class="fas fa-chart-line"></i> Track your impact and achievements</li>
+        </ul>
+      </div>
     </div>
-  </main>
+  </div>
 </body>
 </html>
 

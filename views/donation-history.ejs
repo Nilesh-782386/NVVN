@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation History - CareConnect</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: 600;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-assigned { background-color: #d1ecf1; color: #0c5460; }
+        .status-completed { background-color: #d4edda; color: #155724; }
+        .status-cancelled { background-color: #f8d7da; color: #721c24; }
+        .status-pending_approval { background-color: #ffeaa7; color: #6c5ce7; }
+        .status-picked_up { background-color: #74b9ff; color: white; }
+        .status-in_transit { background-color: #a29bfe; color: white; }
+        .status-delivered { background-color: #00b894; color: white; }
+        .status-rejected { background-color: #e17055; color: white; }
+        
+        .filter-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table thead th {
+            background-color: #f8f9fa;
+            border: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .pagination .page-link {
+            border: none;
+            color: #667eea;
+            border-radius: 8px;
+            margin: 0 2px;
+        }
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .search-box {
+            border-radius: 25px;
+            border: 2px solid #e9ecef;
+            padding: 10px 20px;
+        }
+        .search-box:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Navbar -->
+    <%- include('partials/navbar', { user: user }) %>
+
+    <div class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-0">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Donation History
+                </h2>
+                <p class="text-muted">Track all your donations and their status</p>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filter-section">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-control search-box" id="searchInput" placeholder="Search by type, volunteer, or ID...">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Status Filter</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="pending_approval">Pending Approval</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="picked_up">Picked Up</option>
+                        <option value="in_transit">In Transit</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="completed">Completed</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="fromDate">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="toDate">
+                </div>
+                <div class="col-md-1 mb-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="applyFilters()">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Donations Table -->
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="mb-0">Your Donations</h5>
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge bg-light text-dark" id="donationCount">0 donations</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Volunteer</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="donationsTableBody">
+                            <!-- Donations will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Donation pagination" class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- Pagination will be generated here -->
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Donation Details Modal -->
+    <div class="modal fade" id="donationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Donation Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="donationDetails">
+                    <!-- Details will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let allDonations = [];
+        let filteredDonations = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        // Load donations on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDonations();
+            
+            // Auto-refresh every 30 seconds for real-time updates
+            setInterval(loadDonations, 30000);
+        });
+
+        async function loadDonations() {
+            try {
+                const response = await fetch('/api/donations/history');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allDonations = data.donations;
+                    filteredDonations = [...allDonations];
+                    updateDonationCount();
+                    renderTable();
+                    renderPagination();
+                } else {
+                    console.error('Failed to load donations:', data.message);
+                    showMessage('Failed to load donations', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading donations:', error);
+                showMessage('Error loading donations', 'error');
+            }
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            filteredDonations = allDonations.filter(donation => {
+                // Search filter
+                const donationType = getDonationType(donation);
+                const matchesSearch = !searchTerm || 
+                    donationType.toLowerCase().includes(searchTerm) ||
+                    (donation.volunteer_name && donation.volunteer_name.toLowerCase().includes(searchTerm)) ||
+                    (donation.donor_name && donation.donor_name.toLowerCase().includes(searchTerm)) ||
+                    donation.id.toString().includes(searchTerm);
+
+                // Status filter
+                const matchesStatus = !statusFilter || donation.status === statusFilter;
+
+                // Date filter
+                const donationDate = new Date(donation.created_at);
+                const matchesFromDate = !fromDate || donationDate >= new Date(fromDate);
+                const matchesToDate = !toDate || donationDate <= new Date(toDate + 'T23:59:59');
+
+                return matchesSearch && matchesStatus && matchesFromDate && matchesToDate;
+            });
+
+            currentPage = 1;
+            updateDonationCount();
+            renderTable();
+            renderPagination();
+        }
+
+        function updateDonationCount() {
+            document.getElementById('donationCount').textContent = 
+                `${filteredDonations.length} donation${filteredDonations.length !== 1 ? 's' : ''}`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('donationsTableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageDonations = filteredDonations.slice(startIndex, endIndex);
+
+            if (pageDonations.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No donations found</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = pageDonations.map(donation => `
+                <tr>
+                    <td>${formatDate(donation.created_at)}</td>
+                    <td>
+                        <div>
+                            <strong>${getDonationType(donation)}</strong>
+                            ${donation.final_priority || donation.priority ? `<br><small class="text-muted">Priority: <span class="badge bg-${getPriorityColor(donation.final_priority || donation.priority)}">${getPriorityIcon(donation.final_priority || donation.priority)} ${(donation.final_priority || donation.priority).toUpperCase()} ${donation.is_manual_override ? '(Donor)' : '(AI)'}</span></small>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-${donation.status}">${formatStatus(donation.status)}</span>
+                        ${donation.proof_image ? '<br><small class="text-success"><i class="fas fa-check-circle"></i> Proof uploaded</small>' : ''}
+                    </td>
+                    <td>
+                        ${donation.volunteer_name ? `
+                            <div>
+                                <strong>${donation.volunteer_name}</strong>
+                                ${donation.ngo_name ? `<br><small class="text-muted">via ${donation.ngo_name}</small>` : ''}
+                            </div>
+                        ` : (donation.status === 'pending_approval' ? 'Awaiting NGO approval' : 'Not assigned')}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewDonationDetails(${donation.id})">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        ${donation.proof_image ? `
+                            <button class="btn btn-sm btn-outline-success ms-1" onclick="viewProof('${donation.proof_image}')">
+                                <i class="fas fa-image"></i> Proof
+                            </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredDonations.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // Previous button
+            paginationHTML += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+                </li>
+            `;
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    paginationHTML += `
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                        </li>
+                    `;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+            }
+
+            // Next button
+            paginationHTML += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+                </li>
+            `;
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredDonations.length / itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderTable();
+                renderPagination();
+            }
+        }
+
+        async function viewDonationDetails(donationId) {
+            try {
+                const response = await fetch(`/api/donations/${donationId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const donation = data.donation;
+                    const modalBody = document.getElementById('donationDetails');
+                    
+                    modalBody.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Donation Information</h6>
+                                <p><strong>ID:</strong> ${donation.id}</p>
+                                <p><strong>Type:</strong> ${getDonationType(donation)}</p>
+                                <p><strong>Status:</strong> <span class="status-badge status-${donation.status}">${formatStatus(donation.status)}</span></p>
+                                <p><strong>Created:</strong> ${formatDate(donation.created_at)}</p>
+                                ${donation.assigned_at ? `<p><strong>Assigned:</strong> ${formatDate(donation.assigned_at)}</p>` : ''}
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Contact Information</h6>
+                                <p><strong>Name:</strong> ${donation.donor_name || 'N/A'}</p>
+                                <p><strong>Email:</strong> ${donation.donor_email || 'N/A'}</p>
+                                <p><strong>Phone:</strong> ${donation.donor_phone || 'N/A'}</p>
+                                <p><strong>Address:</strong> ${donation.addline || 'N/A'}, ${donation.city || 'N/A'}</p>
+                            </div>
+                        </div>
+                        ${donation.volunteer_name ? `
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Volunteer Information</h6>
+                                    <p><strong>Name:</strong> ${donation.volunteer_name}</p>
+                                    <p><strong>Phone:</strong> ${donation.volunteer_phone || 'Not provided'}</p>
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${donation.ngo_name ? `
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>NGO Information</h6>
+                                    <p><strong>NGO:</strong> ${donation.ngo_name}</p>
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${donation.proof_image ? `
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Delivery Proof</h6>
+                                    <div class="text-center">
+                                        <img src="${donation.proof_image}" alt="Delivery Proof" class="img-fluid rounded" style="max-height: 300px; border: 2px solid #e9ecef;">
+                                        <p class="text-muted mt-2"><small>Proof of delivery uploaded by volunteer</small></p>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${donation.optnote ? `
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Notes</h6>
+                                    <p>${donation.optnote}</p>
+                                </div>
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    new bootstrap.Modal(document.getElementById('donationModal')).show();
+                } else {
+                    showMessage('Failed to load donation details', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading donation details:', error);
+                showMessage('Error loading donation details', 'error');
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        function formatStatus(status) {
+            return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function getDonationType(donation) {
+            // Check for custom items first
+            if (donation.is_custom_item && donation.custom_description) {
+                return `Other: ${donation.custom_description} (${donation.custom_quantity} items)`;
+            }
+            
+            const items = [];
+            if (donation.books > 0) items.push(`${donation.books} Books`);
+            if (donation.clothes > 0) items.push(`${donation.clothes} Clothes`);
+            if (donation.grains > 0) items.push(`${donation.grains} Grains`);
+            if (donation.footwear > 0) items.push(`${donation.footwear} Footwear`);
+            if (donation.toys > 0) items.push(`${donation.toys} Toys`);
+            if (donation.school_supplies > 0) items.push(`${donation.school_supplies} School Supplies`);
+            return items.length > 0 ? items.join(', ') : 'Mixed Items';
+        }
+
+        function getPriorityColor(priority) {
+            switch(priority) {
+                case 'critical': return 'danger';
+                case 'high': return 'warning';
+                case 'medium': return 'info';
+                case 'low': return 'success';
+                default: return 'secondary';
+            }
+        }
+
+        function getPriorityIcon(priority) {
+            const icons = {
+                'critical': '🔴',
+                'high': '🟡',
+                'medium': '🟢',
+                'low': '⚪'
+            };
+            return icons[priority] || '🟢';
+        }
+
+        function viewProof(imagePath) {
+            const modalHTML = `
+                <div class="modal fade" id="proofModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Delivery Proof</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <img src="${imagePath}" alt="Delivery Proof" class="img-fluid rounded" style="max-height: 500px;">
+                                <p class="text-muted mt-3">Proof of delivery uploaded by volunteer</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('proofModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add new modal
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('proofModal'));
+            modal.show();
+            
+            // Clean up when modal is hidden
+            document.getElementById('proofModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        }
+
+        function showMessage(message, type) {
+            const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+            const alertHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999;" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', alertHTML);
+            
+            setTimeout(() => {
+                const alert = document.querySelector('.alert');
+                if (alert) alert.remove();
+            }, 5000);
+        }
+
+        // Add event listeners for real-time filtering
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('fromDate').addEventListener('change', applyFilters);
+        document.getElementById('toDate').addEventListener('change', applyFilters);
+    </script>
+</body>
+</html>

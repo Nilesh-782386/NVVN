@@ -3,7 +3,7 @@
 
 -- Donors table
 CREATE TABLE IF NOT EXISTS donors (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     fullname VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -13,12 +13,12 @@ CREATE TABLE IF NOT EXISTS donors (
     state VARCHAR(100),
     pincode VARCHAR(10),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Volunteers table
 CREATE TABLE IF NOT EXISTS volunteers (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     fullname VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -29,12 +29,12 @@ CREATE TABLE IF NOT EXISTS volunteers (
     pincode VARCHAR(10),
     availability VARCHAR(50) DEFAULT 'available',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- NGOs table
 CREATE TABLE IF NOT EXISTS ngos (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     ngo_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     registration_number VARCHAR(100) UNIQUE NOT NULL,
@@ -48,15 +48,18 @@ CREATE TABLE IF NOT EXISTS ngos (
     verification_status VARCHAR(20) DEFAULT 'pending',
     document_path VARCHAR(512),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Donation requests table
 CREATE TABLE IF NOT EXISTS donation_requests (
-    id SERIAL PRIMARY KEY,
-    donor_id INTEGER REFERENCES donors(id),
-    volunteer_id INTEGER REFERENCES volunteers(id),
-    ngo_id INTEGER REFERENCES ngos(id),
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    donor_id INT,
+    volunteer_id INT,
+    ngo_id INT,
+    FOREIGN KEY (donor_id) REFERENCES donors(id),
+    FOREIGN KEY (volunteer_id) REFERENCES volunteers(id),
+    FOREIGN KEY (ngo_id) REFERENCES ngos(id),
     title VARCHAR(255),
     description TEXT,
     
@@ -93,7 +96,7 @@ CREATE TABLE IF NOT EXISTS donation_requests (
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     assigned_at TIMESTAMP,
     completed_at TIMESTAMP
 );
@@ -110,7 +113,7 @@ CREATE INDEX IF NOT EXISTS idx_donation_requests_ngo ON donation_requests(ngo_id
 -- Legacy table compatibility (for existing code)
 -- Keep existing users and ngo_register tables but link to new structure
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     fullname VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -119,7 +122,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS ngo_register (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     ngo_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     registration_number VARCHAR(100) UNIQUE NOT NULL,
@@ -136,10 +139,13 @@ CREATE TABLE IF NOT EXISTS ngo_register (
 );
 
 CREATE TABLE IF NOT EXISTS donations (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
-    volunteer_id INTEGER REFERENCES volunteers(id),
-    ngo_id INTEGER REFERENCES ngos(id),
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    volunteer_id INT,
+    ngo_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (volunteer_id) REFERENCES volunteers(id),
+    FOREIGN KEY (ngo_id) REFERENCES ngos(id),
     title VARCHAR(255),
     description TEXT,
     books INTEGER DEFAULT 0,
@@ -147,7 +153,7 @@ CREATE TABLE IF NOT EXISTS donations (
     grains INTEGER DEFAULT 0,
     footwear INTEGER DEFAULT 0,
     toys INTEGER DEFAULT 0,
-    "schoolSupplies" INTEGER DEFAULT 0,
+    school_supplies INTEGER DEFAULT 0,
     pickup_date DATE,
     pickup_time TIME,
     fname VARCHAR(255),
@@ -163,10 +169,12 @@ CREATE TABLE IF NOT EXISTS donations (
     pincode VARCHAR(10),
     optnote TEXT,
     proof_image VARCHAR(512),
-    status VARCHAR(50) DEFAULT 'pending',
+    status VARCHAR(50) DEFAULT 'pending_approval',
     volunteer_name VARCHAR(255),
     volunteer_phone VARCHAR(50),
+    priority ENUM('critical', 'high', 'medium', 'low') DEFAULT 'medium',
+    ngo_approval_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     assigned_at TIMESTAMP
 );

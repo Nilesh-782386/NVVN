@@ -299,10 +299,11 @@ body {
   background-color: #ff5b63;
 }
 .guyimg {
-  height: 400px;
+  height: 350px;
   position: absolute;
   bottom: 0px;
   left: 40px;
+  z-index: 1;
 }
 .ourteamparent {
   position: relative;
@@ -330,11 +331,21 @@ body {
 .five {
   background-color: #fe2e2e;
 }
+.team-member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px;
+}
+
 .memname {
   display: flex;
   justify-content: center; /* Center horizontally */
   align-items: center;
   font-family: "Sedan SC", sans-serif;
+  margin-top: 20px;
+  z-index: 10;
+  position: relative;
 }
 
 .artistic-heading {

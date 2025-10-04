@@ -2,95 +2,680 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NGO Dashboard</title>
-  <link rel="icon" href="/img/logo.svg" type="image/x-icons" />
-  <link rel="stylesheet" href="/css/index.css">
-  <link rel="stylesheet" href="/css/volunteer.css">
+    <title>NGO Dashboard - CareConnect</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        /* Priority Badge Styles */
+        .priority-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-badge.priority-critical {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+        }
+        
+        .priority-badge.priority-high {
+            background: #fff3e0;
+            color: #ef6c00;
+            border: 1px solid #ff9800;
+        }
+        
+        .priority-badge.priority-medium {
+            background: #fffde7;
+            color: #f57f17;
+            border: 1px solid #ffc107;
+        }
+        
+        .priority-badge.priority-low {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        
+        .priority-source {
+            font-size: 0.65rem;
+            opacity: 0.7;
+            font-weight: 400;
+        }
+        .dashboard-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .stats-grid { 
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px; 
+            padding: 30px;
+        }
+        .stat-card { 
+            background: white;
+            padding: 25px; 
+            border-radius: 15px; 
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card.pending { border-left-color: #ffc107; }
+        .stat-card.volunteers { border-left-color: #17a2b8; }
+        .stat-card.completed { border-left-color: #28a745; }
+        .stat-card.total { border-left-color: #6f42c1; }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        .content-section {
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .ngo-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .info-value {
+            color: #6c757d;
+        }
+        .coming-soon {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .coming-soon h3 {
+            margin-bottom: 15px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-list li i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        /* Allowed Items Info Panel Styles */
+        .allowed-items-info {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #e0e7ff;
+        }
+        
+        .allowed-items-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+            font-weight: 500;
+        }
+        
+        .allowed-items-badge i {
+            font-size: 1.1rem;
+        }
+        
+        /* Specialization Badge Styles */
+        .badge.bg-primary {
+            background-color: #007bff !important;
+        }
+        
+        .badge.bg-success {
+            background-color: #28a745 !important;
+        }
+        
+        .badge.bg-secondary {
+            background-color: #6c757d !important;
+        }
+        
+        .badge.bg-info {
+            background-color: #17a2b8 !important;
+        }
+    </style>
 </head>
 <body>
-  <%- include("../partials/navbar.ejs", { user, ngo, volunteer }) %>
-  <main class="container" style="padding: 24px;">
-    <h1>NGO Dashboard</h1>
-
-    <section class="dashboard-section">
-      <h2>Create Donation Request</h2>
-      <form method="post" action="/ngo/requests">
-        <div class="form-group" style="margin: 12px 0;">
-          <label for="title">Title</label>
-          <input id="title" name="title" class="form-control" required />
+    <div class="dashboard-container">
+        <div class="header">
+            <h1><i class="fas fa-building"></i> NGO Dashboard</h1>
+            <p>Welcome back, <strong><%= ngo.ngo_name %></strong>! Manage your donations and volunteers.</p>
         </div>
-        <div class="form-group" style="margin: 12px 0;">
-          <label for="description">Description</label>
-          <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
-        </div>
-        <div class="form-group" style="margin: 12px 0;">
-          <label for="city">City</label>
-          <input id="city" name="city" class="form-control" required />
-        </div>
-        <button type="submit" class="btn btn-primary">Create</button>
-      </form>
-    </section>
 
-    <section class="dashboard-section">
-      <h2>Open Requests</h2>
-      <% if (!open || open.length === 0) { %>
-        <p>No open requests.</p>
-      <% } else { %>
-        <% open.forEach(r => { %>
-          <div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:10px 0;">
-            <div><strong><%= r.title || r.donation_type || 'Donation' %></strong></div>
-            <div><%= r.description || '' %></div>
-            <div>City: <%= r.city || '' %></div>
-            <div>Status: <%= r.status %></div>
-          </div>
-        <% }) %>
-      <% } %>
-    </section>
-
-    <section class="dashboard-section">
-      <h2>Assigned Requests</h2>
-      <% if (!assigned || assigned.length === 0) { %>
-        <p>No assigned requests.</p>
-      <% } else { %>
-        <% assigned.forEach(r => { %>
-          <div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:10px 0;">
-            <div><strong><%= r.title || r.donation_type || 'Donation' %></strong></div>
-            <div>City: <%= r.city || '' %></div>
-            <div>Status: <%= r.status %></div>
-            <div>Volunteer: <%= r.volunteer_name || '—' %> (<%= r.volunteer_phone || '—' %>)</div>
-          </div>
-        <% }) %>
-      <% } %>
-    </section>
-
-    <section class="dashboard-section">
-      <h2>Delivered Requests</h2>
-      <% if (!delivered || delivered.length === 0) { %>
-        <p>No delivered requests.</p>
-      <% } else { %>
-        <% delivered.forEach(r => { %>
-          <div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:10px 0;display:flex;gap:12px;align-items:flex-start;">
-            <div style="flex:1;">
-              <div><strong><%= r.title || r.donation_type || 'Donation' %></strong></div>
-              <div>City: <%= r.city || '' %></div>
-              <div>Status: <%= r.status %></div>
-              <div>Volunteer: <%= r.volunteer_name || '—' %> (<%= r.volunteer_phone || '—' %>)</div>
+        <!-- AI Distribution Dashboard -->
+        <% if (dailyLimits) { %>
+        <div class="ai-dashboard" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; margin: 20px; border-radius: 15px;">
+            <h3><i class="fas fa-robot"></i> AI Distribution System</h3>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="ai-stat">
+                        <h4><%= dailyLimits.approvals_used %>/<%= dailyLimits.daily_limit %></h4>
+                        <p>Daily Approvals</p>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-<%= dailyLimits.approvals_used >= dailyLimits.daily_limit ? 'danger' : dailyLimits.approvals_used >= dailyLimits.daily_limit * 0.8 ? 'warning' : 'success' %>" 
+                                 style="width: <%= (dailyLimits.approvals_used / dailyLimits.daily_limit) * 100 %>%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="ai-stat">
+                        <h4><%= dailyLimits.critical_approvals || 0 %></h4>
+                        <p>Critical Items</p>
+                        <small>No limit applied</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="ai-stat">
+                        <h4><%= dailyLimits.performance_score || 5.0 %>/5</h4>
+                        <p>Performance Score</p>
+                        <div class="stars">
+                            <% for (let i = 1; i <= 5; i++) { %>
+                                <i class="fas fa-star <%= i <= (dailyLimits.performance_score || 5) ? 'text-warning' : 'text-muted' %>"></i>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="ai-stat">
+                        <h4 class="text-<%= dailyLimits.load_level === 'low' ? 'success' : dailyLimits.load_level === 'medium' ? 'warning' : 'danger' %>">
+                            <%= dailyLimits.load_level || 'medium' %>
+                        </h4>
+                        <p>Current Load</p>
+                        <small>Capacity status</small>
+                    </div>
+                </div>
             </div>
-            <div>
-              <% if (r.proof_image) { %>
-                <img src="<%= r.proof_image %>" alt="proof" style="max-width:200px;border-radius:8px;border:1px solid #e5e7eb;" />
-              <% } else { %>
-                <span>No proof uploaded</span>
-              <% } %>
+        </div>
+        <% } %>
+
+        <div class="stats-grid">
+            <div class="stat-card pending">
+                <i class="fas fa-clock fa-2x" style="color: #ffc107;"></i>
+                <div class="stat-number" style="color: #ffc107;"><%= stats.pending || 0 %></div>
+                <p class="stat-label">Pending Donations</p>
+                <small style="color: #666;">Awaiting volunteer assignment</small>
             </div>
-          </div>
-        <% }) %>
-      <% } %>
-    </section>
-  </main>
+            <div class="stat-card volunteers">
+                <i class="fas fa-hands-helping fa-2x" style="color: #17a2b8;"></i>
+                <div class="stat-number" style="color: #17a2b8;"><%= stats.assigned || 0 %></div>
+                <p class="stat-label">Assigned Donations</p>
+                <small style="color: #666;">Currently in progress</small>
+            </div>
+            <div class="stat-card completed">
+                <i class="fas fa-check-circle fa-2x" style="color: #28a745;"></i>
+                <div class="stat-number" style="color: #28a745;"><%= stats.delivered || 0 %></div>
+                <p class="stat-label">Delivered Today</p>
+                <small style="color: #666;">Successfully completed</small>
+            </div>
+            <div class="stat-card total">
+                <i class="fas fa-chart-line fa-2x" style="color: #6f42c1;"></i>
+                <div class="stat-number" style="color: #6f42c1;"><%= stats.total_donations || 0 %></div>
+                <p class="stat-label">Total Donations</p>
+                <small style="color: #666;">All time</small>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <div class="ngo-info">
+                <h3><i class="fas fa-info-circle"></i> NGO Information</h3>
+                <div class="info-item">
+                    <span class="info-label">Organization Name:</span>
+                    <span class="info-value"><%= ngo.ngo_name %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Registration Number:</span>
+                    <span class="info-value"><%= ngo.registration_number %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value"><%= ngo.email %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value"><%= ngo.primary_phone %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Location:</span>
+                    <span class="info-value"><%= ngo.city %>, <%= ngo.state %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value">
+                        <span class="badge bg-<%= ngo.status === 'verified' ? 'success' : ngo.status === 'applied' ? 'warning' : 'secondary' %>">
+                            <%= ngo.status %>
+                        </span>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">NGO Type:</span>
+                    <span class="info-value">
+                        <span class="badge bg-info">
+                            <%= ngo.ngo_type ? ngo.ngo_type.replace('_', ' ').toUpperCase() : 'MULTI-PURPOSE' %>
+                        </span>
+                    </span>
+                </div>
+        </div>
+
+        <!-- Allowed Items Info Panel -->
+        <div class="section-card" style="background: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+            <h3><i class="fas fa-list-check"></i> Allowed Items Info</h3>
+            <div class="allowed-items-info">
+                <p class="mb-3">
+                    <strong>This NGO can approve:</strong>
+                </p>
+                <div class="allowed-items-list">
+                    <% 
+                    const ngoTypeInfo = {
+                        food: 'Food, Grains, Medicine, Water',
+                        clothing: 'Clothes, Blankets, Footwear, Food, Medicine, Water',
+                        education: 'Books, School Supplies, Toys, Food, Medicine, Water',
+                        medical: 'Medicines, Medical Equipment, Food, Water',
+                        elderly_care: 'Food, Medicine, Clothes, Water',
+                        multi_purpose: 'All donation items'
+                    };
+                    const allowedItems = ngoTypeInfo[ngo.ngo_type] || ngoTypeInfo.multi_purpose;
+                    %>
+                    <div class="allowed-items-badge">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <span><%= allowedItems %></span>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    <i class="fas fa-info-circle"></i>
+                    Universal items (Food, Medicine, Water) are available to all NGOs for emergency situations.
+                </small>
+            </div>
+        </div>
+
+            <!-- City Donation Requests Section -->
+            <% if (cityDonations && cityDonations.length > 0) { %>
+            <div class="section-card" style="background: #e3f2fd; border: 1px solid #90caf9; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <h3><i class="fas fa-map-marker-alt text-primary"></i> Donation Requests in <%= ngo.city %> (<%= cityDonations.length %>)</h3>
+                <p class="text-muted">Review and approve donation requests in your city</p>
+                
+                <div class="row">
+                    <% cityDonations.forEach(function(donation) { %>
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <span class="priority-badge priority-<%= donation.final_priority || donation.priority || 'medium' %>">
+                                            <% 
+                                                const priority = donation.final_priority || donation.priority || 'medium';
+                                                const icons = {
+                                                    'critical': '🔴',
+                                                    'high': '🟡',
+                                                    'medium': '🟢',
+                                                    'low': '⚪'
+                                                };
+                                                const icon = icons[priority] || '🟢';
+                                            %>
+                                            <%= icon %> 
+                                            <%= priority.toUpperCase() %>
+                                            <% if (donation.is_manual_override) { %>
+                                                <small class="priority-source">(Donor)</small>
+                                            <% } else { %>
+                                                <small class="priority-source">(AI)</small>
+                                            <% } %>
+                                        </span>
+                                        Request #<%= donation.id %>
+                                    </h6>
+                                    <small class="text-muted"><%= new Date(donation.created_at).toLocaleDateString() %></small>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <strong>Donor:</strong> <%= donation.donor_name || donation.fname + ' ' + donation.lname %><br>
+                                    <strong>Location:</strong> <%= donation.city %><br>
+                                    <strong>Items:</strong>
+                                    <% if (donation.is_custom_item && donation.custom_description) { %>
+                                        <div class="custom-item-display">
+                                            <strong>Other:</strong> <%= donation.custom_description %><br>
+                                            <strong>Quantity:</strong> <%= donation.custom_quantity %> items
+                                        </div>
+                                    <% } else { %>
+                                        <% if (donation.books > 0) { %> <%= donation.books %> Books <% } %>
+                                        <% if (donation.clothes > 0) { %> <%= donation.clothes %> Clothes <% } %>
+                                        <% if (donation.grains > 0) { %> <%= donation.grains %> Grains <% } %>
+                                        <% if (donation.footwear > 0) { %> <%= donation.footwear %> Footwear <% } %>
+                                        <% if (donation.toys > 0) { %> <%= donation.toys %> Toys <% } %>
+                                        <% if (donation.school_supplies > 0) { %> <%= donation.school_supplies %> School Supplies <% } %>
+                                    <% } %>
+                                </div>
+                                
+                                <!-- AI Suggestions -->
+                                <% if (donation.ai_suggestions && donation.ai_suggestions.length > 0) { %>
+                                <div class="mb-2">
+                                    <small class="text-info">
+                                        <i class="fas fa-robot"></i> AI Suggestion: 
+                                        <% const topSuggestion = donation.ai_suggestions[0]; %>
+                                        <% if (topSuggestion.ngo_id === ngo.id) { %>
+                                            <span class="text-success">Recommended for your NGO</span>
+                                        <% } else { %>
+                                            <span class="text-warning">Consider <%= topSuggestion.ngo_name %></span>
+                                        <% } %>
+                                    </small>
+                                </div>
+                                <% } %>
+
+                                <!-- Approval Status -->
+                                <% if (donation.can_approve) { %>
+                                    <% if (donation.can_approve.isCritical) { %>
+                                    <div class="mb-2">
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-triangle"></i> Critical Priority - No Limit
+                                        </span>
+                                    </div>
+                                    <% } else { %>
+                                    <div class="mb-2">
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-info-circle"></i> <%= donation.can_approve.remaining %> approvals remaining
+                                        </span>
+                                    </div>
+                                    <% } %>
+                                <% } else { %>
+                                    <div class="mb-2">
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-ban"></i> <%= donation.can_approve.reason %>
+                                        </span>
+                                    </div>
+                                <% } %>
+
+                                <!-- Specialization Compatibility Display -->
+                                <% if (donation.can_approve && donation.can_approve.specializationCompatibility) { %>
+                                <div class="mb-2">
+                                    <% const spec = donation.can_approve.specializationCompatibility; %>
+                                    <% if (spec.canApprove) { %>
+                                        <span class="badge bg-<%= spec.matchType === 'universal' ? 'primary' : spec.matchType === 'specialized' ? 'success' : 'info' %>">
+                                            <i class="fas fa-check-circle"></i> <%= spec.reason %>
+                                        </span>
+                                    <% } else { %>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-ban"></i> <%= spec.reason %>
+                                        </span>
+                                    <% } %>
+                                </div>
+                                <% } %>
+
+                                <div class="d-flex gap-2">
+                                    <% if (donation.can_approve && donation.can_approve.canApprove) { %>
+                                    <% const spec = donation.can_approve.specializationCompatibility; %>
+                                    <button class="btn btn-<%= spec.matchType === 'universal' ? 'primary' : spec.matchType === 'specialized' ? 'success' : 'info' %> btn-sm" 
+                                            onclick="approveDonation(<%= donation.id %>)"
+                                            title="<%= spec.reason %>">
+                                        <i class="fas fa-check"></i> <%= spec.buttonText || 'Approve' %>
+                                    </button>
+                                    <% } else { %>
+                                    <button class="btn btn-secondary btn-sm" disabled 
+                                            title="<%= donation.can_approve && donation.can_approve.specializationCompatibility ? donation.can_approve.specializationCompatibility.reason : 'Cannot approve' %>">
+                                        <i class="fas fa-ban"></i> VIEW ONLY
+                                    </button>
+                                    <% } %>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="rejectDonation(<%= donation.id %>)">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <% }); %>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="section-card" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <h3><i class="fas fa-map-marker-alt text-muted"></i> Donation Requests in <%= ngo.city %></h3>
+                <p class="text-muted">No pending donation requests in your city at the moment.</p>
+            </div>
+            <% } %>
+
+            <!-- Assigned Donations Section -->
+            <% if (assignedDonations && assignedDonations.length > 0) { %>
+            <div class="section-card" style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <h3><i class="fas fa-check-circle text-success"></i> Your Assigned Donations (<%= assignedDonations.length %>)</h3>
+                <p class="text-muted">Donations approved by your NGO and assigned to volunteers</p>
+                
+                <div class="row">
+                    <% assignedDonations.forEach(function(donation) { %>
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">Request #<%= donation.id %></h6>
+                                    <span class="badge bg-<%= donation.status === 'assigned' ? 'warning' : donation.status === 'picked_up' ? 'info' : donation.status === 'in_transit' ? 'primary' : 'success' %>">
+                                        <%= donation.status %>
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <strong>Donor:</strong> <%= donation.donor_name || donation.fname + ' ' + donation.lname %><br>
+                                    <strong>Volunteer:</strong> <%= donation.volunteer_name || 'Not assigned' %><br>
+                                    <strong>Status:</strong> <%= donation.status %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <% }); %>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="section-card" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <h3><i class="fas fa-check-circle text-muted"></i> Your Assigned Donations</h3>
+                <p class="text-muted">No donations assigned to your NGO yet.</p>
+            </div>
+            <% } %>
+
+            <!-- City Coverage Analytics -->
+            <% if (cityCoverage) { %>
+            <div class="section-card" style="background: #e8f5e8; border: 1px solid #c3e6cb; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <h3><i class="fas fa-chart-pie text-success"></i> City Coverage Analytics</h3>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="coverage-stat">
+                            <h4><%= cityCoverage ? cityCoverage.total_ngos || 0 : 0 %></h4>
+                            <p>Total NGOs</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="coverage-stat">
+                            <h4><%= cityCoverage ? cityCoverage.active_ngos || 0 : 0 %></h4>
+                            <p>Active NGOs</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="coverage-stat">
+                            <h4><%= cityCoverage ? cityCoverage.total_requests_today || 0 : 0 %></h4>
+                            <p>Requests Today</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="coverage-stat">
+                            <h4><%= cityCoverage && cityCoverage.coverage_percentage ? parseFloat(cityCoverage.coverage_percentage).toFixed(1) : 0 %>%</h4>
+                            <p>Coverage Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- Load Balancing Recommendations -->
+            <% if (loadBalancing && loadBalancing.length > 0) { %>
+            <div class="section-card" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <h3><i class="fas fa-balance-scale text-warning"></i> Load Balancing Status</h3>
+                <p class="text-muted">Current capacity distribution across NGOs in <%= ngo.city %></p>
+                <div class="row">
+                    <% loadBalancing.forEach(function(ngoData) { %>
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <%= ngoData.ngo_name %>
+                                    <% if (ngoData.id === ngo.id) { %>
+                                        <span class="badge bg-primary">Your NGO</span>
+                                    <% } %>
+                                </h6>
+                                <div class="mb-2">
+                                    <strong>Capacity:</strong> <%= ngoData.remaining_capacity || 0 %> remaining<br>
+                                    <strong>Load:</strong> 
+                                    <span class="badge bg-<%= ngoData.load_level === 'low' ? 'success' : ngoData.load_level === 'medium' ? 'warning' : 'danger' %>">
+                                        <%= ngoData.load_level %>
+                                    </span><br>
+                                    <strong>Rating:</strong> <%= ngoData.rating || 5.0 %>/5
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <% }); %>
+                </div>
+            </div>
+            <% } %>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- CareConnect AI Chatbot -->
+    <script src="/js/chatbot.js"></script>
+    
+    <script>
+        // NGO Approval Functions
+        async function approveDonation(donationId) {
+            if (!confirm('Are you sure you want to approve this donation request? This will assign it to your NGO.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/ngo/approve-donation/${donationId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let message = result.message || 'Donation approved successfully!';
+                    if (result.isCritical) {
+                        message += ' (Critical item - no limit applied)';
+                    } else if (result.remaining !== undefined) {
+                        message += ` (${result.remaining} approvals remaining today)`;
+                    }
+                    alert(message);
+                    location.reload(); // Refresh the page to show updated data
+                } else {
+                    let errorMessage = result.error || 'Unknown error';
+                    if (result.isLimitReached) {
+                        errorMessage += '\n\nTip: Critical items (food, medicine) don\'t count toward daily limits.';
+                    }
+                    alert('Failed to approve donation: ' + errorMessage);
+                }
+            } catch (error) {
+                console.error('Error approving donation:', error);
+                alert('Error approving donation. Please try again.');
+            }
+        }
+        
+        async function rejectDonation(donationId) {
+            if (!confirm('Are you sure you want to reject this donation request? Other NGOs can still approve it.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/ngo/reject-donation/${donationId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Donation rejected. Other NGOs can still approve this request.');
+                    location.reload(); // Refresh the page to show updated data
+                } else {
+                    alert('Failed to reject donation: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error rejecting donation:', error);
+                alert('Error rejecting donation. Please try again.');
+            }
+        }
+    </script>
 </body>
 </html>
-
-

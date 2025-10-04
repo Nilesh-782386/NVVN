@@ -44,7 +44,7 @@
 <div class="maindiv">
     <div class="parentdiv">
 
-        <form action="/submit-info" method="post">
+        <form id="donationInfoForm" action="/submit-info" method="post" onsubmit="return validateForm()">
             <div class="namediv">
                 <div class="fname">
                     <label for="fname">First Name</label><br>
@@ -115,6 +115,182 @@
                 <button type="submit" value="submit" class="nextbut">Next</button>
             </div>
         </form>
+        
+        <!-- Success/Error Messages -->
+        <div id="messageContainer" style="display: none; margin-top: 20px; padding: 15px; border-radius: 8px; text-align: center;">
+            <span id="messageText"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+function validateForm() {
+    const form = document.getElementById('donationInfoForm');
+    const messageContainer = document.getElementById('messageContainer');
+    const messageText = document.getElementById('messageText');
+    
+    // Clear previous messages
+    messageContainer.style.display = 'none';
+    
+    // Get form values
+    const fname = document.getElementById('fname').value.trim();
+    const lname = document.getElementById('lname').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const phone2 = document.getElementById('phone2').value.trim();
+    const flat = document.getElementById('flat').value.trim();
+    const addline = document.getElementById('addline').value.trim();
+    const city = document.getElementById('city').value.trim();
+    const state = document.getElementById('state').value.trim();
+    const pincode = document.getElementById('pincode').value.trim();
+    
+    // Validation rules
+    const errors = [];
+    
+    if (!fname) errors.push('First name is required');
+    if (!lname) errors.push('Last name is required');
+    if (!email) errors.push('Email is required');
+    else if (!isValidEmail(email)) errors.push('Please enter a valid email address');
+    if (!phone) errors.push('Phone number is required');
+    else if (!isValidPhone(phone)) errors.push('Please enter a valid phone number');
+    if (!phone2) errors.push('Alternate phone number is required');
+    else if (!isValidPhone(phone2)) errors.push('Please enter a valid alternate phone number');
+    if (!flat) errors.push('Flat/Room number is required');
+    if (!addline) errors.push('Address is required');
+    if (!city) errors.push('City is required');
+    if (!state) errors.push('State is required');
+    if (!pincode) errors.push('PIN code is required');
+    else if (!isValidPincode(pincode)) errors.push('PIN code should be 6 digits');
+    
+    if (errors.length > 0) {
+        showMessage(errors.join('<br>'), 'error');
+        return false;
+    }
+    
+    // Show success message
+    showMessage('Form validated successfully! Proceeding to next step...', 'success');
+    return true;
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function isValidPhone(phone) {
+    const phoneRegex = /^[6-9]\d{9}$/;
+    return phoneRegex.test(phone);
+}
+
+function isValidPincode(pincode) {
+    const pincodeRegex = /^\d{6}$/;
+    return pincodeRegex.test(pincode);
+}
+
+function showMessage(message, type) {
+    const messageContainer = document.getElementById('messageContainer');
+    const messageText = document.getElementById('messageText');
+    
+    messageContainer.style.display = 'block';
+    messageText.innerHTML = message;
+    
+    if (type === 'error') {
+        messageContainer.style.backgroundColor = '#ffebee';
+        messageContainer.style.color = '#c62828';
+        messageContainer.style.border = '1px solid #ef5350';
+    } else {
+        messageContainer.style.backgroundColor = '#e8f5e8';
+        messageContainer.style.color = '#2e7d32';
+        messageContainer.style.border = '1px solid #4caf50';
+    }
+    
+    // Auto-hide success messages after 3 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            messageContainer.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Real-time validation
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('input[required], textarea[required]');
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+    });
+});
+
+function validateField(field) {
+    const value = field.value.trim();
+    const fieldName = field.name;
+    let isValid = true;
+    let errorMessage = '';
+    
+    switch(fieldName) {
+        case 'fname':
+        case 'lname':
+            if (!value) {
+                isValid = false;
+                errorMessage = 'This field is required';
+            }
+            break;
+        case 'email':
+            if (!value) {
+                isValid = false;
+                errorMessage = 'Email is required';
+            } else if (!isValidEmail(value)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid email address';
+            }
+            break;
+        case 'phone':
+        case 'phone2':
+            if (!value) {
+                isValid = false;
+                errorMessage = 'Phone number is required';
+            } else if (!isValidPhone(value)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid 10-digit phone number';
+            }
+            break;
+        case 'pincode':
+            if (!value) {
+                isValid = false;
+                errorMessage = 'PIN code is required';
+            } else if (!isValidPincode(value)) {
+                isValid = false;
+                errorMessage = 'PIN code should be 6 digits';
+            }
+            break;
+        default:
+            if (!value) {
+                isValid = false;
+                errorMessage = 'This field is required';
+            }
+    }
+    
+    // Show/hide error message
+    let errorElement = field.parentNode.querySelector('.error-message');
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
+        errorElement.style.color = '#c62828';
+        errorElement.style.fontSize = '0.8rem';
+        errorElement.style.marginTop = '5px';
+        field.parentNode.appendChild(errorElement);
+    }
+    
+    if (!isValid) {
+        errorElement.textContent = errorMessage;
+        field.style.borderColor = '#ef5350';
+    } else {
+        errorElement.textContent = '';
+        field.style.borderColor = '#4caf50';
+    }
+}
+</script>
         
 
 </body>

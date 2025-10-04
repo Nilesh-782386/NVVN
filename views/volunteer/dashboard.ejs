@@ -4,51 +4,376 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Volunteer Dashboard</title>
+  <title>Volunteer Dashboard - CareConnect</title>
   <link rel="icon" href="/img/logo.svg" type="image/x-icons" />
   <link rel="stylesheet" href="/css/index.css">
   <link rel="stylesheet" href="/css/volunteer.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ADDED: File upload styling */
+    .file-upload-container {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    
+    .file-input-button {
+      background: #2563eb;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+    
+    .file-input-button:hover {
+      background: #1d4ed8;
+    }
+    
+    .file-name {
+      font-size: 14px;
+      color: #6b7280;
+      margin-left: 10px;
+      font-style: italic;
+    }
+    
+    .proof-upload-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    /* Animation for notifications */
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+    
+    /* Priority Badge Styles */
+    .priority-critical {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      color: white;
+      font-weight: 700;
+      animation: pulse 2s infinite;
+    }
+    
+    .priority-high {
+      background: linear-gradient(135deg, #ea580c, #f97316);
+      color: white;
+      font-weight: 600;
+    }
+    
+    .priority-medium {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: white;
+      font-weight: 600;
+    }
+    
+    .priority-low {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: white;
+      font-weight: 600;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .request-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+    }
+    
+    .request-card:hover {
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .card-header .title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .card-details {
+      margin-bottom: 16px;
+    }
+    
+    .meta {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    
+    .meta i {
+      margin-right: 8px;
+      width: 16px;
+      color: #9ca3af;
+    }
+    
+    .btn-accept {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-accept:hover {
+      background: linear-gradient(135deg, #15803d, #16a34a);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+    }
+    
+    .empty-state i {
+      color: #d1d5db;
+      margin-bottom: 16px;
+    }
+    
+    .empty-state p {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    
+    .empty-state .helper {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+  </style>
 </head>
 <body class="volunteer-page">
   <%- include("../partials/navbar.ejs", { user, ngo, volunteer }) %>
-  <main class="container" style="padding: 24px;">
-    <div class="dashboard-header">
-      <h1>Volunteer Dashboard</h1>
-      <p class="welcome-text">Welcome back, <strong><%= volunteer && volunteer.name ? volunteer.name : 'Volunteer' %></strong>! Ready to make a difference today?</p>
+  
+  <div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <h2 class="mb-0">
+          <i class="fas fa-heart me-2 text-success"></i>
+          Volunteer Dashboard
+        </h2>
+        <p class="text-muted">Welcome back, <strong><%= volunteer && volunteer.name ? volunteer.name : 'Volunteer' %></strong>! Ready to make a difference today?</p>
+      </div>
+    </div>
+
+    <!-- Volunteer Profile Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-user me-2"></i>
+              My Profile
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Personal Information</h6>
+                <p><strong>Name:</strong> <%= volunteer && volunteer.name ? volunteer.name : 'N/A' %></p>
+                <p><strong>Email:</strong> <%= volunteer && volunteer.email ? volunteer.email : 'N/A' %></p>
+                <p><strong>Phone:</strong> <%= volunteer && volunteer.phone ? volunteer.phone : 'N/A' %></p>
+                <p><strong>Location:</strong> <%= volunteer && volunteer.city ? volunteer.city : 'N/A' %></p>
+              </div>
+              <div class="col-md-6">
+                <h6>Volunteer Stats</h6>
+                <p><strong>Completed Donations:</strong> <span id="completed-count-profile">0</span></p>
+                <p><strong>Current Status:</strong> <span class="badge bg-success">Active</span></p>
+                <p><strong>Vehicle Type:</strong> <%= volunteer && volunteer.vehicle_type ? volunteer.vehicle_type : 'N/A' %></p>
+                <p><strong>Rating:</strong> <span id="volunteer-rating">5.0</span> ⭐</p>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-12">
+                <button class="btn btn-outline-primary btn-sm" onclick="editProfile()">
+                  <i class="fas fa-edit"></i> Edit Profile
+                </button>
+                <button class="btn btn-outline-info btn-sm ms-2" onclick="viewHistory()">
+                  <i class="fas fa-history"></i> View History
+                </button>
+                <button class="btn btn-outline-warning btn-sm ms-2" onclick="updateAvailability()">
+                  <i class="fas fa-calendar"></i> Update Availability
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+          <div class="card-body text-center">
+            <i class="fas fa-list fa-2x mb-2"></i>
+            <h5 class="card-title">Available Requests</h5>
+            <h3 id="available-count-card">0</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+          <div class="card-body text-center">
+            <i class="fas fa-check-circle fa-2x mb-2"></i>
+            <h5 class="card-title">Accepted Requests</h5>
+            <h3 id="accepted-count-card">0</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+          <div class="card-body text-center">
+            <i class="fas fa-truck fa-2x mb-2"></i>
+            <h5 class="card-title">In Progress</h5>
+            <h3 id="progress-count-card">0</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+          <div class="card-body text-center">
+            <i class="fas fa-trophy fa-2x mb-2"></i>
+            <h5 class="card-title">Completed</h5>
+            <h3 id="completed-count-card">0</h3>
+          </div>
+        </div>
+      </div>
     </div>
     
-    <section class="dashboard-section">
-      <div class="section-title">
-        <h2><i class="fa-solid fa-heart" style="color: #16a34a; margin-right: 8px;"></i>Open Requests Near You</h2>
-        <small id="available-count">Loading...</small>
+    <!-- Main Content -->
+    <div class="row">
+      <!-- Available Requests -->
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                Available Requests
+                <span class="badge bg-light text-dark ms-2" id="available-count">0</span>
+              </h5>
+              <button class="btn btn-light btn-sm" onclick="refreshAvailableRequests()" title="Refresh Available Requests">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div id="open-requests" class="request-list" style="max-height: 400px; overflow-y: auto;"></div>
+          </div>
+        </div>
       </div>
-      <div id="open-requests" class="request-list"></div>
-    </section>
-    
-    <section class="dashboard-section">
-      <div class="section-title">
-        <h2><i class="fa-solid fa-handshake" style="color: #2563eb; margin-right: 8px;"></i>Your Assignments</h2>
-        <small id="assigned-count">Loading...</small>
+
+      <!-- My Assignments -->
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-check-circle me-2"></i>
+              My Assignments
+              <span class="badge bg-light text-dark ms-2" id="assigned-count">0</span>
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div id="my-requests" class="request-list" style="max-height: 400px; overflow-y: auto;"></div>
+          </div>
+        </div>
       </div>
-      <div id="my-requests" class="request-list"></div>
-    </section>
-  </main>
+    </div>
+  </div>
   <script>
     let refreshInterval;
     
+    let allDonations = {};
+
     async function fetchData() {
       try {
+        console.log('🚨 FETCHING VOLUNTEER DASHBOARD DATA...');
         const res = await fetch('/volunteer-dashboard-data');
         if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
+        
+        console.log('🚨 DASHBOARD DATA RECEIVED:', data);
+        console.log('🚨 Available donations:', data.availableDonations?.length || 0);
+        console.log('🚨 My donations:', data.myDonations?.length || 0);
+        
+        // Store data globally for other functions
+        allDonations = data;
+        
         renderOpen(data.availableDonations || []);
         renderMine(data.myDonations || []);
+        updateProfileStats(data);
         
         // Show success indicator
         showNotification('Dashboard updated', 'success');
       } catch (error) {
         console.error('Failed to fetch data:', error);
         showNotification('Failed to update dashboard', 'error');
+      }
+    }
+
+    function updateProfileStats(data) {
+      // Update completed count in profile
+      const completedCount = (data.myDonations || []).filter(d => d.status === 'delivered').length;
+      const completedCountElement = document.getElementById('completed-count-profile');
+      if (completedCountElement) {
+        completedCountElement.textContent = completedCount;
+      }
+
+      // Update volunteer rating (you can fetch this from volunteer data)
+      const ratingElement = document.getElementById('volunteer-rating');
+      if (ratingElement) {
+        // For now, show a default rating. You can fetch actual rating from volunteer data
+        ratingElement.textContent = '5.0';
       }
     }
     
@@ -91,107 +416,781 @@
     });
 
     function renderOpen(list){
+      console.log('🚨 RENDERING OPEN REQUESTS:', list);
       const el = document.getElementById('open-requests');
       const countEl = document.getElementById('available-count');
-      countEl.textContent = `${list.length} request${list.length !== 1 ? 's' : ''} available`;
+      const countCard = document.getElementById('available-count-card');
+      
+      countEl.textContent = list.length;
+      countCard.textContent = list.length;
       
       if(!list.length){ 
-        el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-search" style="font-size: 2rem; color: #d1d5db; margin-bottom: 12px;"></i><p>No open requests near you right now.</p><small class="helper">Check back later for new opportunities to help!</small></div>'; 
+        console.log('🚨 NO AVAILABLE REQUESTS - SHOWING EMPTY STATE');
+        el.innerHTML = `
+          <div class="text-center p-4">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No available requests in your district right now.</p>
+            <small class="text-muted">Check back later for new opportunities to help!</small>
+          </div>
+        `; 
         return; 
       }
+      console.log('🚨 RENDERING', list.length, 'AVAILABLE REQUESTS');
       el.innerHTML = list.map(r => card(r, true)).join('');
     }
+    
     function renderMine(list){
       const el = document.getElementById('my-requests');
       const countEl = document.getElementById('assigned-count');
-      countEl.textContent = `${list.length} assignment${list.length !== 1 ? 's' : ''}`;
+      const acceptedCard = document.getElementById('accepted-count-card');
+      const progressCard = document.getElementById('progress-count-card');
+      const completedCard = document.getElementById('completed-count-card');
+      
+      countEl.textContent = list.length;
+      
+      // Count by status
+      const accepted = list.filter(r => r.status === 'assigned').length;
+      const progress = list.filter(r => ['picked_up', 'in_transit'].includes(r.status)).length;
+      const completed = list.filter(r => r.status === 'delivered').length;
+      
+      acceptedCard.textContent = accepted;
+      progressCard.textContent = progress;
+      completedCard.textContent = completed;
       
       if(!list.length){ 
-        el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-clipboard-list" style="font-size: 2rem; color: #d1d5db; margin-bottom: 12px;"></i><p>No active assignments.</p><small class="helper">Accept a request above to get started!</small></div>'; 
+        el.innerHTML = `
+          <div class="text-center p-4">
+            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No active assignments.</p>
+            <small class="text-muted">Accept a request above to get started!</small>
+          </div>
+        `; 
         return; 
       }
       el.innerHTML = list.map(r => card(r, false)).join('');
     }
+    
     function card(r, canAccept){
-      const donor = r.donor_name ? (r.donor_name[0] + '***') : 'Donor';
-      const urgency = r.urgency || 'normal';
+      const donor = r.donor_name || 'Donor';
+      const urgency = r.final_priority || r.priority || 'medium';
       const statusText = r.status || 'pending';
-      const donationType = r.donation_type || r.type || 'Donation';
-      const donationIcon = getDonationIcon(donationType);
       
-      return `
-        <div class="request-card" data-id="${r.id}">
-          <div class="card-content">
-            <div class="card-header">
-              <div class="title">
-                <i class="${donationIcon}" style="margin-right: 8px;"></i>
-                ${donationType}
-              </div>
-              <span class="badge ${urgency}">${urgency}</span>
-            </div>
-            
-            <div class="card-details">
-              <div class="meta"><i class="fa-solid fa-user"></i> Donor: ${donor}</div>
-              <div class="meta"><i class="fa-solid fa-location-dot"></i> ${r.address || r.pickup_address || r.city || 'Location not specified'}</div>
-              ${r.ngo_name ? `<div class="meta"><i class="fa-solid fa-building"></i> NGO: ${r.ngo_name}</div>` : ''}
-              ${!canAccept ? `<div class="meta"><i class="fa-solid fa-info-circle"></i> Status: <span class="status-pill ${statusText}">${statusText.replace('_', ' ')}</span></div>` : ''}
-            </div>
-          </div>
-          
-          <div class="actions">
-            ${canAccept ? `
-              <button onclick="accept(${r.id})" class="btn-accept">
-                <i class="fa-solid fa-check"></i> Accept
-              </button>
-            ` : `
-              <div class="proof-upload">
-                <form onsubmit="return uploadProof(event, ${r.id})" enctype="multipart/form-data" style="display: flex; gap: 8px; align-items: center;">
-                  <input type="file" name="proof" accept="image/*" required title="Upload proof of delivery" />
-                  <button type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-upload"></i> Mark Delivered
-                  </button>
-                </form>
-              </div>
-            `}
-          </div>
-        </div>`;
-    }
-    
-    function getDonationIcon(type) {
-      const iconMap = {
-        'food': 'fa-solid fa-utensils',
-        'clothes': 'fa-solid fa-tshirt', 
-        'books': 'fa-solid fa-book',
-        'toys': 'fa-solid fa-puzzle-piece',
-        'medicine': 'fa-solid fa-pills',
-        'electronics': 'fa-solid fa-laptop',
-        'furniture': 'fa-solid fa-couch',
-        'stationary': 'fa-solid fa-pen',
-        'shoes': 'fa-solid fa-shoe-prints'
+      // Get items description
+      const items = [];
+      if (r.books > 0) items.push(`${r.books} Books`);
+      if (r.clothes > 0) items.push(`${r.clothes} Clothes`);
+      if (r.grains > 0) items.push(`${r.grains} Grains`);
+      if (r.footwear > 0) items.push(`${r.footwear} Footwear`);
+      if (r.toys > 0) items.push(`${r.toys} Toys`);
+      if (r.school_supplies > 0) items.push(`${r.school_supplies} School Supplies`);
+      if (r.is_custom_item && r.custom_description) {
+        items.push(`${r.custom_description} (${r.custom_quantity})`);
+      }
+      const itemsText = items.length > 0 ? items.join(', ') : 'Mixed Items';
+      
+      // Priority badge color
+      const priorityColors = {
+        'critical': 'danger',
+        'high': 'warning', 
+        'medium': 'info',
+        'low': 'success'
       };
-      const lowerType = (type || '').toLowerCase();
-      return iconMap[lowerType] || 'fa-solid fa-gift';
-    }
-    async function accept(id){
-      const res = await fetch(`/accept-donation/${id}`, { method: 'POST' });
-      const j = await res.json();
-      if(j.success){ fetchData(); } else { alert('Failed to accept'); }
-    }
-    async function uploadProof(e, id){
-      e.preventDefault();
-      const form = e.target;
-      const fd = new FormData(form);
-      const res = await fetch(`/volunteer/proof/${id}`, { method: 'POST', body: fd });
-      const j = await res.json();
-      if(j.success){ fetchData(); } else { alert('Upload failed'); }
-      return false;
+      const priorityColor = priorityColors[urgency] || 'secondary';
+      
+      // Status badge color
+      const statusColors = {
+        'pending_approval': 'warning',
+        'assigned': 'primary',
+        'picked_up': 'info',
+        'in_transit': 'warning',
+        'delivered': 'success',
+        'rejected': 'danger'
+      };
+      const statusColor = statusColors[statusText] || 'secondary';
+      
+      if (canAccept) {
+        // Available request card
+      return `
+          <div class="card m-2">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="card-title mb-0">Request #${r.id}</h6>
+                <span class="badge bg-${priorityColor}">${urgency.toUpperCase()}</span>
+              </div>
+              <p class="card-text">
+                <strong>Donor:</strong> ${donor}<br>
+                <strong>Items:</strong> ${itemsText}<br>
+                <strong>Location:</strong> ${r.city || 'N/A'}<br>
+                <strong>NGO:</strong> ${r.ngo_name || 'N/A'}
+              </p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">${new Date(r.created_at).toLocaleDateString()}</small>
+                <div>
+                  <button class="btn btn-primary btn-sm" onclick="acceptRequest(${r.id})">
+                    <i class="fas fa-check"></i> Accept
+                  </button>
+                  <button class="btn btn-outline-info btn-sm ms-1" onclick="viewRequestDetails(${r.id})">
+                    <i class="fas fa-eye"></i> Details
+                  </button>
+                </div>
+            </div>
+            </div>
+          </div>
+        `;
+      } else {
+        // My assignment card
+        const actionButtons = getActionButtons(r);
+        return `
+          <div class="card m-2">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="card-title mb-0">Request #${r.id}</h6>
+                <span class="badge bg-${statusColor}">${statusText.replace('_', ' ').toUpperCase()}</span>
+                    </div>
+              <p class="card-text">
+                <strong>Donor:</strong> ${donor}<br>
+                <strong>Items:</strong> ${itemsText}<br>
+                <strong>Location:</strong> ${r.city || 'N/A'}<br>
+                <strong>NGO:</strong> ${r.ngo_name || 'N/A'}
+              </p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">${new Date(r.created_at).toLocaleDateString()}</small>
+                <div>
+                  ${actionButtons}
+                  <button class="btn btn-outline-info btn-sm ms-1" onclick="viewRequestDetails(${r.id})">
+                    <i class="fas fa-eye"></i> Details
+                  </button>
+                  <button class="btn btn-outline-warning btn-sm ms-1" onclick="contactDonor(${r.id})">
+                    <i class="fas fa-phone"></i> Contact
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
     }
     
-    // Initialize dashboard
-    fetchData();
-    startAutoRefresh();
+    function getActionButtons(donation) {
+      const status = donation.status;
+      
+      switch(status) {
+        case 'assigned':
+          return `
+            <button class="btn btn-warning btn-sm" onclick="markPickedUp(${donation.id})">
+              <i class="fas fa-hand-paper"></i> Pick Up
+            </button>
+          `;
+        case 'picked_up':
+          return `
+            <button class="btn btn-info btn-sm" onclick="markInTransit(${donation.id})">
+              <i class="fas fa-truck"></i> In Transit
+            </button>
+          `;
+        case 'in_transit':
+          return `
+            <button class="btn btn-success btn-sm" onclick="markDelivered(${donation.id})">
+              <i class="fas fa-check-circle"></i> Delivered
+            </button>
+          `;
+        case 'delivered':
+          return `
+            <span class="badge bg-success">
+              <i class="fas fa-check"></i> Completed
+            </span>
+          `;
+        default:
+          return `
+            <span class="badge bg-secondary">${status}</span>
+          `;
+      }
+    }
+    
+    // Action functions
+    function acceptRequest(donationId) {
+      if (confirm('Are you sure you want to accept this donation request?')) {
+        fetch(`/accept-donation/${donationId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showNotification('Donation request accepted successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            showNotification('Error accepting donation request', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showNotification('Error accepting donation request', 'error');
+        });
+      }
+    }
+    
+    function markPickedUp(donationId) {
+      if (confirm('Confirm that you have picked up this donation?')) {
+        fetch(`/volunteer/pickup/${donationId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showNotification('Donation marked as picked up!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else { 
+            showNotification('Error updating donation status', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showNotification('Error updating donation status', 'error');
+        });
+      }
+    }
+    
+    function markInTransit(donationId) {
+      if (confirm('Mark this donation as in transit?')) {
+        fetch(`/volunteer/transit/${donationId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showNotification('Donation marked as in transit!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            showNotification('Error updating donation status', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showNotification('Error updating donation status', 'error');
+        });
+      }
+    }
+    
+    function markDelivered(donationId) {
+      if (confirm('Confirm that you have delivered this donation?')) {
+        fetch(`/volunteer/deliver/${donationId}`, {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showNotification('Donation marked as delivered!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            showNotification('Error updating donation status', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showNotification('Error updating donation status', 'error');
+        });
+      }
+    }
+    
+    function showNotification(message, type) {
+      const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+      const alertHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999;" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', alertHTML);
+      
+      setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) alert.remove();
+      }, 5000);
+    }
+
+    // Profile Functions
+    function editProfile() {
+      showNotification('Profile editing feature coming soon!', 'info');
+    }
+
+    async function viewHistory() {
+      try {
+        const response = await fetch('/volunteer/my-requests');
+        const data = await response.json();
+        
+        if (data.success) {
+          showHistoryModal(data.requests);
+        } else {
+          showNotification('Failed to load history', 'error');
+        }
+      } catch (error) {
+        console.error('History error:', error);
+        showNotification('Error loading history', 'error');
+      }
+    }
+
+    async function updateAvailability() {
+      try {
+        const response = await fetch('/volunteer/available');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Update the main dashboard with fresh data
+          renderAvailableRequests(data.requests);
+          showAvailabilityModal(data.requests);
+        } else {
+          showNotification('Failed to load available requests', 'error');
+        }
+      } catch (error) {
+        console.error('Availability error:', error);
+        showNotification('Error loading available requests', 'error');
+      }
+    }
+
+    // New function to render available requests from /volunteer/available API
+    function renderAvailableRequests(requests) {
+      console.log('🚨 RENDERING AVAILABLE REQUESTS FROM API:', requests);
+      const container = document.getElementById('open-requests');
+      const countEl = document.getElementById('available-count');
+      const countCard = document.getElementById('available-count-card');
+      
+      if (!container) {
+        console.error('🚨 Container not found: open-requests');
+        return;
+      }
+      
+      countEl.textContent = requests.length;
+      countCard.textContent = requests.length;
+      
+      if (requests.length === 0) {
+        container.innerHTML = `
+          <div class="text-center p-4">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No available requests in your district right now.</p>
+            <small class="text-muted">Check back later for new opportunities to help!</small>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = requests.map(request => `
+        <div class="card m-2">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h6 class="card-title mb-0">Request #${request.id}</h6>
+              <span class="badge bg-${getPriorityColor(request.final_priority || request.priority)}">${(request.final_priority || request.priority || 'medium').toUpperCase()}</span>
+            </div>
+            <p class="card-text">
+              <strong>Donor:</strong> ${request.donor_name || 'N/A'}<br>
+              <strong>Items:</strong> ${getItemsText(request)}<br>
+              <strong>Location:</strong> ${request.city || 'N/A'}, ${request.district || 'N/A'}<br>
+              <strong>NGO:</strong> ${request.ngo_name || 'N/A'}
+            </p>
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">${new Date(request.created_at).toLocaleDateString()}</small>
+              <div>
+                <button class="btn btn-primary btn-sm" onclick="acceptRequest(${request.id})">
+                  <i class="fas fa-check"></i> Accept
+                </button>
+                <button class="btn btn-outline-info btn-sm ms-1" onclick="viewRequestDetails(${request.id})">
+                  <i class="fas fa-eye"></i> Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+      console.log('🚨 RENDERED', requests.length, 'AVAILABLE REQUESTS');
+    }
+
+    // Helper function to get priority color
+    function getPriorityColor(priority) {
+      const colors = {
+        'critical': 'danger',
+        'high': 'warning',
+        'medium': 'info',
+        'low': 'success'
+      };
+      return colors[priority] || 'secondary';
+    }
+
+    // Helper function to get items text
+    function getItemsText(request) {
+      const items = [];
+      if (request.books > 0) items.push(`${request.books} Books`);
+      if (request.clothes > 0) items.push(`${request.clothes} Clothes`);
+      if (request.grains > 0) items.push(`${request.grains} Grains`);
+      if (request.footwear > 0) items.push(`${request.footwear} Footwear`);
+      if (request.toys > 0) items.push(`${request.toys} Toys`);
+      if (request.school_supplies > 0) items.push(`${request.school_supplies} School Supplies`);
+      if (request.is_custom_item && request.custom_description) {
+        items.push(`${request.custom_description} (${request.custom_quantity})`);
+      }
+      return items.length > 0 ? items.join(', ') : 'Mixed Items';
+    }
+
+    // Function to manually refresh available requests from /volunteer/available API
+    async function refreshAvailableRequests() {
+      try {
+        console.log('🚨 MANUALLY REFRESHING AVAILABLE REQUESTS...');
+        const response = await fetch('/volunteer/available');
+        const data = await response.json();
+        
+        if (data.success) {
+          renderAvailableRequests(data.requests);
+          showNotification(`Found ${data.requests.length} available requests`, 'success');
+        } else {
+          showNotification('Failed to refresh available requests', 'error');
+        }
+      } catch (error) {
+        console.error('Refresh error:', error);
+        showNotification('Error refreshing available requests', 'error');
+      }
+    }
+
+    function showHistoryModal(requests) {
+      const modalContent = `
+        <div class="modal fade" id="historyModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">My Completed Requests</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                ${requests.length === 0 ? `
+                  <div class="text-center p-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No completed requests yet.</p>
+                  </div>
+                ` : `
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Donor</th>
+                          <th>Items</th>
+                          <th>NGO</th>
+                          <th>Completed</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${requests.map(req => `
+                          <tr>
+                            <td>#${req.id}</td>
+                            <td>${req.donor_name || 'N/A'}</td>
+                            <td>${getItemsText(req)}</td>
+                            <td>${req.ngo_name || 'N/A'}</td>
+                            <td>${new Date(req.created_at).toLocaleDateString()}</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                `}
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Remove existing modal if any
+      const existingModal = document.getElementById('historyModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+
+      // Add new modal
+      document.body.insertAdjacentHTML('beforeend', modalContent);
+
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+      modal.show();
+
+      // Clean up when modal is hidden
+      document.getElementById('historyModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+      });
+    }
+
+    function showAvailabilityModal(requests) {
+      const modalContent = `
+        <div class="modal fade" id="availabilityModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Available Requests in Your District</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                ${requests.length === 0 ? `
+                  <div class="text-center p-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No available requests in your district right now.</p>
+                  </div>
+                ` : `
+                  <div class="row">
+                    ${requests.map(req => `
+                      <div class="col-md-6 mb-3">
+                        <div class="card">
+                          <div class="card-body">
+                            <h6 class="card-title">Request #${req.id}</h6>
+                            <p class="card-text">
+                              <strong>Donor:</strong> ${req.donor_name || 'N/A'}<br>
+                              <strong>Items:</strong> ${getItemsText(req)}<br>
+                              <strong>Location:</strong> ${req.city || 'N/A'}<br>
+                              <strong>NGO:</strong> ${req.ngo_name || 'N/A'}
+                            </p>
+                            <button class="btn btn-primary btn-sm" onclick="acceptRequest(${req.id}); bootstrap.Modal.getInstance(document.getElementById('availabilityModal')).hide();">
+                              <i class="fas fa-check"></i> Accept
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                `}
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Remove existing modal if any
+      const existingModal = document.getElementById('availabilityModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+
+      // Add new modal
+      document.body.insertAdjacentHTML('beforeend', modalContent);
+
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('availabilityModal'));
+      modal.show();
+
+      // Clean up when modal is hidden
+      document.getElementById('availabilityModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+      });
+    }
+
+    // Request Functions
+    function viewRequestDetails(donationId) {
+      // Find the donation in the current data
+      const donation = [...(allDonations?.availableDonations || []), ...(allDonations?.myDonations || [])]
+        .find(d => d.id === donationId);
+      
+      if (!donation) {
+        showNotification('Donation details not found', 'error');
+        return;
+      }
+
+      // Create modal content
+      const modalContent = `
+        <div class="modal fade" id="requestDetailsModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Request Details #${donation.id}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <h6>Donation Information</h6>
+                    <p><strong>Status:</strong> <span class="badge bg-${getStatusColor(donation.status)}">${donation.status.replace('_', ' ').toUpperCase()}</span></p>
+                    <p><strong>Priority:</strong> <span class="badge bg-${getPriorityColor(donation.priority)}">${donation.priority.toUpperCase()}</span></p>
+                    <p><strong>Created:</strong> ${new Date(donation.created_at).toLocaleString()}</p>
+                    <p><strong>Location:</strong> ${donation.city || 'N/A'}</p>
+                  </div>
+                  <div class="col-md-6">
+                    <h6>Donor Information</h6>
+                    <p><strong>Name:</strong> ${donation.donor_name || 'N/A'}</p>
+                    <p><strong>Phone:</strong> ${donation.donor_phone || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${donation.donor_email || 'N/A'}</p>
+                  </div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-12">
+                    <h6>Items</h6>
+                    <p>${getItemsText(donation)}</p>
+                  </div>
+                </div>
+                ${donation.ngo_name ? `
+                  <div class="row mt-3">
+                    <div class="col-12">
+                      <h6>NGO Information</h6>
+                      <p><strong>NGO:</strong> ${donation.ngo_name}</p>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                ${donation.status === 'assigned' ? `
+                  <button type="button" class="btn btn-primary" onclick="markPickedUp(${donation.id}); bootstrap.Modal.getInstance(document.getElementById('requestDetailsModal')).hide();">
+                    <i class="fas fa-hand-paper"></i> Pick Up
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Remove existing modal if any
+      const existingModal = document.getElementById('requestDetailsModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+
+      // Add new modal
+      document.body.insertAdjacentHTML('beforeend', modalContent);
+
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('requestDetailsModal'));
+      modal.show();
+
+      // Clean up when modal is hidden
+      document.getElementById('requestDetailsModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+      });
+    }
+
+    function contactDonor(donationId) {
+      // Find the donation
+      const donation = [...(allDonations?.availableDonations || []), ...(allDonations?.myDonations || [])]
+        .find(d => d.id === donationId);
+      
+      if (!donation || !donation.donor_phone) {
+        showNotification('Donor contact information not available', 'error');
+        return;
+      }
+
+      // Create contact modal
+      const modalContent = `
+        <div class="modal fade" id="contactModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Contact Donor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <p><strong>Donor:</strong> ${donation.donor_name || 'N/A'}</p>
+                <p><strong>Phone:</strong> <a href="tel:${donation.donor_phone}">${donation.donor_phone}</a></p>
+                <p><strong>Email:</strong> ${donation.donor_email ? `<a href="mailto:${donation.donor_email}">${donation.donor_email}</a>` : 'N/A'}</p>
+                <hr>
+                <p class="text-muted">You can call or message the donor to coordinate pickup/delivery.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="tel:${donation.donor_phone}" class="btn btn-primary">
+                  <i class="fas fa-phone"></i> Call Now
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Remove existing modal if any
+      const existingModal = document.getElementById('contactModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+
+      // Add new modal
+      document.body.insertAdjacentHTML('beforeend', modalContent);
+
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('contactModal'));
+      modal.show();
+
+      // Clean up when modal is hidden
+      document.getElementById('contactModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+      });
+    }
+
+    // Helper functions
+    function getStatusColor(status) {
+      const colors = {
+        'pending_approval': 'warning',
+        'assigned': 'primary',
+        'picked_up': 'info',
+        'in_transit': 'warning',
+        'delivered': 'success',
+        'rejected': 'danger'
+      };
+      return colors[status] || 'secondary';
+    }
+
+    function getPriorityColor(priority) {
+      const colors = {
+        'critical': 'danger',
+        'high': 'warning',
+        'medium': 'info',
+        'low': 'success'
+      };
+      return colors[priority] || 'secondary';
+    }
+
+    function getItemsText(donation) {
+      const items = [];
+      if (donation.books > 0) items.push(`${donation.books} Books`);
+      if (donation.clothes > 0) items.push(`${donation.clothes} Clothes`);
+      if (donation.grains > 0) items.push(`${donation.grains} Grains`);
+      if (donation.footwear > 0) items.push(`${donation.footwear} Footwear`);
+      if (donation.toys > 0) items.push(`${donation.toys} Toys`);
+      if (donation.school_supplies > 0) items.push(`${donation.school_supplies} School Supplies`);
+      if (donation.is_custom_item && donation.custom_description) {
+        items.push(`${donation.custom_description} (${donation.custom_quantity})`);
+      }
+      return items.length > 0 ? items.join(', ') : 'Mixed Items';
+    }
+
+    // Initialize dashboard when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🚨 VOLUNTEER DASHBOARD INITIALIZED');
+      
+      // Use server-rendered data first
+      const serverData = {
+        availableDonations: <%- JSON.stringify(availableDonations || []) %>,
+        myDonations: <%- JSON.stringify(myDonations || []) %>,
+        volunteer: <%- JSON.stringify(volunteer || {}) %>
+      };
+      
+      console.log('🚨 SERVER DATA:', serverData);
+      console.log('🚨 Available donations count on page load:', serverData.availableDonations?.length || 0);
+      console.log('🚨 My assignments count on page load:', serverData.myDonations?.length || 0);
+      
+      // Store data globally for other functions
+      allDonations = serverData;
+      
+      // Render with server data
+      renderOpen(serverData.availableDonations || []);
+      renderMine(serverData.myDonations || []);
+      updateProfileStats(serverData);
+      
+      // Then start auto-refresh
+      startAutoRefresh();
+    });
   </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-

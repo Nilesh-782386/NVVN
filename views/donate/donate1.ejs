@@ -125,12 +125,146 @@
                 </div>
             </div>
         </div>
+        
+    </div>
+
+    <!-- Special Items Section -->
+    <div class="special-items-section">
+        <div class="special-items-header">
+            <h3>Don't see what you want to donate?</h3>
+            <p>Add special items that aren't in our standard categories</p>
+        </div>
+        <div class="special-items-button" onclick="openCustomItemModal()">
+            <div class="special-items-icon">
+                <i class="fas fa-plus-circle" id="specialItemsIcon"></i>
+            </div>
+            <div class="special-items-text">
+                <span id="specialItemsText">Add Special Items</span>
+                <small>Click to describe your donation</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hybrid AI + Manual Priority Selection -->
+    <div class="priority-section">
+        <h3>Priority Level</h3>
+        
+        <!-- AI Suggestion Display -->
+        <div id="aiSuggestion" class="ai-suggestion" style="display: none;">
+            <div class="ai-suggestion-header">
+                <i class="fas fa-robot"></i>
+                <span>AI Recommendation</span>
+            </div>
+            <div class="ai-suggestion-content">
+                <div id="aiSuggestionBadge" class="ai-suggestion-badge"></div>
+                <div id="aiSuggestionReason" class="ai-suggestion-reason"></div>
+                <div class="ai-confidence">
+                    <span>Confidence: <span id="aiConfidence"></span>%</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manual Priority Selection -->
+        <div class="manual-priority">
+            <h4>Or choose your own priority:</h4>
+            <div class="priority-options">
+                <label class="priority-option critical">
+                    <input type="radio" name="final_priority" value="critical" id="priority_critical">
+                    <span class="priority-badge critical">🔴 CRITICAL</span>
+                    <span class="priority-desc">Life-saving items like medicines, blood, oxygen</span>
+                </label>
+                <label class="priority-option high">
+                    <input type="radio" name="final_priority" value="high" id="priority_high">
+                    <span class="priority-badge high">🟡 HIGH</span>
+                    <span class="priority-desc">Perishable items like food, fresh vegetables</span>
+                </label>
+                <label class="priority-option medium">
+                    <input type="radio" name="final_priority" value="medium" id="priority_medium" checked>
+                    <span class="priority-badge medium">🟢 MEDIUM</span>
+                    <span class="priority-desc">Essential items like clothes, blankets, school supplies</span>
+                </label>
+                <label class="priority-option low">
+                    <input type="radio" name="final_priority" value="low" id="priority_low">
+                    <span class="priority-badge low">⚪ LOW</span>
+                    <span class="priority-desc">Non-essential items like books, toys, entertainment</span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Hidden fields for AI data -->
+        <input type="hidden" name="ai_suggested_priority" id="ai_suggested_priority">
+        <input type="hidden" name="is_manual_override" id="is_manual_override" value="false">
     </div>
 
     <div>
         <button type="submit" value="submit" class="nextbut">NEXT</button>
     </div>
 </form>
+
+<!-- Special Items Modal -->
+<div id="specialItemsModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-gift"></i> Special Items Donation</h3>
+            <button class="modal-close" onclick="closeCustomItemModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="modal-description">
+                <p>Donate items that are not in our standard categories. Describe what you're donating and we'll help you set the right priority.</p>
+            </div>
+            
+            <!-- Quantity Slider -->
+            <div class="quantity-slider-section">
+                <label for="customQuantity">How many items are you donating?</label>
+                <div class="slider-container">
+                    <input type="range" id="customQuantity" name="custom_quantity" min="1" max="20" value="5" 
+                           oninput="updateQuantityDisplay(this.value)" class="quantity-slider">
+                    <div class="slider-labels">
+                        <span>1</span>
+                        <span>5</span>
+                        <span>10</span>
+                        <span>15</span>
+                        <span>20+</span>
+                    </div>
+                    <div class="quantity-display">
+                        <span id="quantityValue">5</span> items
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Description Textarea -->
+            <div class="description-section">
+                <label for="customDescription">What are you donating?</label>
+                <textarea id="customDescription" name="custom_description" 
+                          placeholder="Describe your donation items in detail...&#10;&#10;Examples:&#10;• Medical equipment for hospital&#10;• Baby food and formula&#10;• Furniture for new home&#10;• Electronics and gadgets&#10;• Art supplies for school&#10;• Sports equipment"
+                          rows="6" oninput="analyzeCustomDescription()" class="description-textarea"></textarea>
+            </div>
+            
+            <!-- AI Suggestion Display -->
+            <div id="modalAiSuggestion" class="modal-ai-suggestion" style="display: none;">
+                <div class="ai-suggestion-header">
+                    <i class="fas fa-robot"></i>
+                    <span>AI Recommendation</span>
+                </div>
+                <div class="ai-suggestion-content">
+                    <div id="modalAiSuggestionBadge" class="ai-suggestion-badge"></div>
+                    <div id="modalAiSuggestionReason" class="ai-suggestion-reason"></div>
+                    <div class="ai-confidence">
+                        <span>Confidence: <span id="modalAiConfidence"></span>%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" onclick="closeCustomItemModal()">Cancel</button>
+            <button type="button" class="btn-save" onclick="saveCustomItem()">Add Special Items</button>
+        </div>
+    </div>
+</div>
 
 <section class="footer">
     <footer class="py-3 my-4">
@@ -148,4 +282,7 @@
 </body>
 <script src="js/donate.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+<!-- CareConnect AI Chatbot -->
+<script src="/js/chatbot.js"></script>
 </html>

@@ -1,5 +1,5 @@
 import express from "express";
-import { pool } from "../db.js";
+import { query } from "../db.js";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -20,36 +20,185 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Volunteer Dashboard Data
+// Volunteer Profile Routes
+router.get("/volunteer/my-requests", ensureVolunteerAuthenticated, async (req, res) => {
+  try {
+    const volunteerId = req.session.volunteer.id;
+    
+    // Get volunteer's assigned requests (all statuses)
+    const result = await query(`
+      SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
+      FROM donations d 
+      LEFT JOIN users u ON d.user_id = u.id 
+      LEFT JOIN ngo_register n ON d.ngo_id = n.id
+      WHERE d.volunteer_id = ? 
+        AND d.status IN ('assigned', 'picked_up', 'in_transit', 'delivered')
+      ORDER BY 
+        CASE d.status 
+          WHEN 'assigned' THEN 1 
+          WHEN 'picked_up' THEN 2 
+          WHEN 'in_transit' THEN 3 
+          WHEN 'delivered' THEN 4 
+        END,
+        d.created_at DESC
+    `, [volunteerId]);
+    
+    res.json({ 
+      success: true, 
+      requests: result[0] || [],
+      volunteer: req.session.volunteer
+    });
+  } catch (error) {
+    console.error("My requests error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+router.get("/volunteer/available", ensureVolunteerAuthenticated, async (req, res) => {
+  try {
+    const volunteerId = req.session.volunteer.id;
+    
+    // Get volunteer's district
+    const volunteerResult = await query(
+      "SELECT district FROM volunteers WHERE id = ?",
+      [volunteerId]
+    );
+    
+    const volunteerDistrict = volunteerResult[0] && volunteerResult[0][0] ? volunteerResult[0][0].district : null;
+    
+    // Get available requests in volunteer's district
+    const result = await query(`
+      SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
+      FROM donations d 
+      LEFT JOIN users u ON d.user_id = u.id 
+      LEFT JOIN ngo_register n ON d.ngo_id = n.id
+      WHERE d.district = ? AND d.status = 'assigned' AND d.volunteer_id IS NULL
+      ORDER BY 
+        CASE d.priority 
+          WHEN 'critical' THEN 1 
+          WHEN 'high' THEN 2 
+          WHEN 'medium' THEN 3 
+          WHEN 'low' THEN 4 
+        END,
+        d.created_at DESC
+    `, [volunteerDistrict]);
+    
+    // Construct clean JSON response
+    const response = {
+      success: true,
+      requests: result[0] || [],
+      volunteer: req.session.volunteer || {}
+    };
+    
+    // Send validated JSON
+    res.json(response);
+    
+  } catch (error) {
+    console.error("Available requests error:", error);
+    
+    // Send clean error response
+    const errorResponse = {
+      success: false,
+      error: "Failed to fetch data",
+      requests: [],
+      volunteer: {}
+    };
+    
+    res.status(500).json(errorResponse);
+  }
+});
+
+// Volunteer Dashboard Data - UPDATED QUERY
 router.get("/volunteer-dashboard-data", ensureVolunteerAuthenticated, async (req, res) => {
+  console.log("🚨 API CALLED - Volunteer session:", req.session.volunteer);
   const volunteerId = req.session.volunteer.id;
   
   try {
-    const [availableDonations] = await pool.query(`
-      SELECT d.*, u.fullname as donor_name 
+    // Get volunteer's district first
+    const volunteerResult = await query(
+      "SELECT district FROM volunteers WHERE id = ?",
+      [volunteerId]
+    );
+    
+    const volunteerDistrict = volunteerResult[0] && volunteerResult[0][0] ? volunteerResult[0][0].district : null;
+    
+    // Get assigned donations in the volunteer's district
+    const availableResult = await query(`
+      SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
       FROM donations d 
       LEFT JOIN users u ON d.user_id = u.id 
-      WHERE d.city = ? AND d.volunteer_id IS NULL AND d.status = 'pending'
-      ORDER BY d.created_at DESC
-    `, [req.session.volunteer.city]);
+      LEFT JOIN ngo_register n ON d.ngo_id = n.id
+      WHERE d.district = ? AND d.status = 'assigned' AND d.volunteer_id IS NULL
+      ORDER BY 
+        CASE d.priority 
+          WHEN 'critical' THEN 1 
+          WHEN 'high' THEN 2 
+          WHEN 'medium' THEN 3 
+          WHEN 'low' THEN 4 
+        END,
+        d.created_at DESC
+    `, [volunteerDistrict]);
 
-    const [myDonations] = await pool.query(`
+    console.log("🐛 DEBUG - Available donations count:", availableResult[0]?.length || 0);
+    console.log("🐛 DEBUG - Volunteer district:", volunteerDistrict);
+    console.log("🐛 DEBUG - Volunteer data:", volunteerResult[0] && volunteerResult[0][0]);
+    console.log("🐛 DEBUG - Available donations raw result:", JSON.stringify(availableResult));
+    console.log("🐛 DEBUG - Available donations [0]:", availableResult[0]);
+    console.log("🐛 DEBUG - Available donations [1]:", availableResult[1]);
+
+    // Your assignments
+    const myDonationsResult = await query(`
       SELECT d.*, u.fullname as donor_name, n.ngo_name
       FROM donations d 
       LEFT JOIN users u ON d.user_id = u.id 
       LEFT JOIN ngo_register n ON d.ngo_id = n.id
       WHERE d.volunteer_id = ? 
-      ORDER BY FIELD(d.status, 'accepted', 'picked_up', 'delivered', 'completed'), d.created_at DESC
+        AND d.status IN ('assigned', 'picked_up', 'in_transit', 'delivered')
+      ORDER BY 
+        CASE d.priority 
+          WHEN 'critical' THEN 1 
+          WHEN 'high' THEN 2 
+          WHEN 'medium' THEN 3 
+          WHEN 'low' THEN 4 
+        END,
+        d.created_at DESC
     `, [volunteerId]);
 
     res.json({
       volunteer: req.session.volunteer,
-      availableDonations,
-      myDonations
+      availableDonations: availableResult[0] || [],
+      myDonations: myDonationsResult[0] || []
     });
   } catch (err) {
     console.error("Dashboard error:", err);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// DEBUG ROUTE: Check volunteer data and query
+router.get("/debug/volunteer-info", ensureVolunteerAuthenticated, async (req, res) => {
+  try {
+    console.log("👤 VOLUNTEER SESSION DATA:", req.session.volunteer);
+    
+    // Test the actual query
+    const availableResult = await query(`
+      SELECT d.*, u.fullname as donor_name 
+      FROM donations d 
+      LEFT JOIN users u ON d.user_id = u.id 
+      WHERE d.status = 'pending'
+      ORDER BY d.created_at DESC
+    `);
+    
+    console.log("🔍 DONATIONS QUERY RESULTS:", availableResult[0]);
+    
+    res.json({
+      volunteer: req.session.volunteer,
+      availableDonationsCount: availableResult[0]?.length || 0,
+      availableDonations: availableResult[0] || []
+    });
+  } catch (err) {
+    console.error("Debug error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -59,14 +208,14 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
   const volunteerId = req.session.volunteer.id;
 
   try {
-    await pool.query(
-      "UPDATE donations SET volunteer_id = ?, volunteer_name = ?, volunteer_phone = ?, status = 'assigned', assigned_at = NOW() WHERE id = ? AND volunteer_id IS NULL",
-      [
-        volunteerId,
-        req.session.volunteer.name || req.session.volunteer.fullname || req.session.volunteer.email,
-        req.session.volunteer.phone || '',
-        donationId
-      ]
+    const volunteerName = req.session.volunteer.name || 
+                         req.session.volunteer.fullname || 
+                         req.session.volunteer.email;
+    const volunteerPhone = req.session.volunteer.phone || '';
+
+    await query(
+      "UPDATE donations SET volunteer_id = ?, volunteer_name = ?, volunteer_phone = ?, status = 'assigned', assigned_at = NOW() WHERE id = ? AND (volunteer_id IS NULL OR volunteer_id = '')",
+      [volunteerId, volunteerName, volunteerPhone, donationId]
     );
     
     res.json({ success: true, message: "Donation accepted successfully" });
@@ -76,21 +225,81 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
   }
 });
 
-// Update donation status
+// Mark donation as picked up
+router.post("/volunteer/pickup/:id", ensureVolunteerAuthenticated, async (req, res) => {
+  const donationId = req.params.id;
+  const volunteerId = req.session.volunteer.id;
+
+  try {
+    await query(
+      "UPDATE donations SET status = 'picked_up' WHERE id = ? AND volunteer_id = ?",
+      [donationId, volunteerId]
+    );
+
+    res.json({ success: true, message: "Donation marked as picked up" });
+  } catch (err) {
+    console.error("Pickup error:", err);
+    res.json({ success: false, message: "Failed to update status" });
+  }
+});
+
+// Mark donation as in transit
+router.post("/volunteer/transit/:id", ensureVolunteerAuthenticated, async (req, res) => {
+  const donationId = req.params.id;
+  const volunteerId = req.session.volunteer.id;
+
+  try {
+    await query(
+      "UPDATE donations SET status = 'in_transit' WHERE id = ? AND volunteer_id = ?",
+      [donationId, volunteerId]
+    );
+
+    res.json({ success: true, message: "Donation marked as in transit" });
+  } catch (err) {
+    console.error("Transit error:", err);
+    res.json({ success: false, message: "Failed to update status" });
+  }
+});
+
+// Mark donation as delivered
+router.post("/volunteer/deliver/:id", ensureVolunteerAuthenticated, async (req, res) => {
+  const donationId = req.params.id;
+  const volunteerId = req.session.volunteer.id;
+
+  try {
+    await query(
+      "UPDATE donations SET status = 'delivered' WHERE id = ? AND volunteer_id = ?",
+      [donationId, volunteerId]
+    );
+
+    // Update volunteer completed donations count
+    await query(
+      "UPDATE volunteers SET completed_donations = COALESCE(completed_donations, 0) + 1 WHERE id = ?",
+      [volunteerId]
+    );
+
+    res.json({ success: true, message: "Donation marked as delivered" });
+  } catch (err) {
+    console.error("Delivery error:", err);
+    res.json({ success: false, message: "Failed to update status" });
+  }
+});
+
+// Update donation status (legacy route)
 router.post("/update-status/:id", ensureVolunteerAuthenticated, async (req, res) => {
   const { status } = req.body;
   const donationId = req.params.id;
   const volunteerId = req.session.volunteer.id;
 
   try {
-    await pool.query(
+    await query(
       "UPDATE donations SET status = ? WHERE id = ? AND volunteer_id = ?",
       [status, donationId, volunteerId]
     );
 
-    if (status === 'completed') {
-      await pool.query(
-        "UPDATE volunteers SET completed_donations = completed_donations + 1 WHERE id = ?",
+    if (status === 'completed' || status === 'delivered') {
+      await query(
+        "UPDATE volunteers SET completed_donations = COALESCE(completed_donations, 0) + 1 WHERE id = ?",
         [volunteerId]
       );
     }
@@ -102,19 +311,46 @@ router.post("/update-status/:id", ensureVolunteerAuthenticated, async (req, res)
   }
 });
 
-// ===== VOLUNTEER AVAILABILITY API ENDPOINTS =====
+// Upload proof of delivery - FIXED: Remove updated_at
+router.post("/volunteer/proof/:id", ensureVolunteerAuthenticated, upload.single("proof"), async (req, res) => {
+  const donationId = req.params.id;
+  
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: "No file uploaded" });
+  }
+
+  const filePath = `/upload/${path.basename(req.file.path)}`;
+  
+  try {
+    // FIXED: Remove updated_at column
+    await query(
+      "UPDATE donations SET proof_image = ?, status = 'delivered' WHERE id = ? AND volunteer_id = ?",
+      [filePath, donationId, req.session.volunteer.id]
+    );
+    
+    await query(
+      "UPDATE volunteers SET completed_donations = COALESCE(completed_donations, 0) + 1 WHERE id = ?",
+      [req.session.volunteer.id]
+    );
+    
+    res.json({ success: true, file: filePath });
+  } catch (err) {
+    console.error("Proof upload error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 
 // Get volunteer availability
 router.get("/api/volunteer/availability", ensureVolunteerAuthenticated, async (req, res) => {
     const volunteerId = req.session.volunteer.id;
     
     try {
-        const result = await pool.query(
-            'SELECT * FROM volunteer_availability WHERE volunteer_id = $1 AND is_active = true ORDER BY day_of_week, start_time',
+        const result = await query(
+            'SELECT * FROM volunteer_availability WHERE volunteer_id = ? AND is_active = true ORDER BY day_of_week, start_time',
             [volunteerId]
         );
         
-        res.json({ success: true, availability: result.rows });
+        res.json({ success: true, availability: result[0] || [] });
     } catch (err) {
         console.error('Error loading volunteer availability:', err);
         res.status(500).json({ success: false, message: 'Database error' });
@@ -126,29 +362,22 @@ router.post("/api/volunteer/availability", ensureVolunteerAuthenticated, async (
     const volunteerId = req.session.volunteer.id;
     const { availability, location } = req.body;
     
-    const client = await pool.connect();
-    
     try {
-        await client.query('BEGIN');
-        
-        // Update volunteer's location if provided
         if (location && location.latitude && location.longitude) {
-            await client.query(
-                'UPDATE volunteers SET latitude = $1, longitude = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+            await query(
+                'UPDATE volunteers SET latitude = ?, longitude = ? WHERE id = ?',
                 [location.latitude, location.longitude, volunteerId]
             );
         }
         
-        // Deactivate all existing availability
-        await client.query(
-            'UPDATE volunteer_availability SET is_active = false WHERE volunteer_id = $1',
+        await query(
+            'UPDATE volunteer_availability SET is_active = false WHERE volunteer_id = ?',
             [volunteerId]
         );
         
-        // Insert new availability slots
         for (const slot of availability) {
-            await client.query(
-                'INSERT INTO volunteer_availability (volunteer_id, day_of_week, start_time, end_time, latitude, longitude, max_radius_km, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, true)',
+            await query(
+                'INSERT INTO volunteer_availability (volunteer_id, day_of_week, start_time, end_time, latitude, longitude, max_radius_km, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, true)',
                 [
                     volunteerId,
                     slot.day_of_week,
@@ -161,56 +390,50 @@ router.post("/api/volunteer/availability", ensureVolunteerAuthenticated, async (
             );
         }
         
-        await client.query('COMMIT');
         res.json({ success: true });
         
     } catch (err) {
-        await client.query('ROLLBACK');
         console.error('Error saving availability:', err);
         res.status(500).json({ success: false, message: 'Error saving availability' });
-    } finally {
-        client.release();
     }
 });
 
 // Check for auto-assignments
 router.post("/api/volunteer/check-auto-assignments", ensureVolunteerAuthenticated, async (req, res) => {
     const volunteerId = req.session.volunteer.id;
-    const currentDay = new Date().getDay(); // 0=Sunday, 1=Monday, etc.
-    const currentTime = new Date().toTimeString().slice(0, 5); // HH:MM format
+    const currentDay = new Date().getDay();
+    const currentTime = new Date().toTimeString().slice(0, 5);
     
     try {
-        // Get volunteer's location
-        const volunteerResult = await pool.query(
-            'SELECT latitude, longitude FROM volunteers WHERE id = $1',
+        const volunteerResult = await query(
+            'SELECT latitude, longitude FROM volunteers WHERE id = ?',
             [volunteerId]
         );
         
-        if (!volunteerResult.rows[0] || !volunteerResult.rows[0].latitude) {
+        if (!volunteerResult[0] || !volunteerResult[0][0] || !volunteerResult[0][0].latitude) {
             return res.json({ success: true, assignments: [] });
         }
         
-        const volunteer = volunteerResult.rows[0];
+        const volunteer = volunteerResult[0][0];
         
-        // Find available requests that match volunteer's current availability
-        const query = `
+        const searchQuery = `
             SELECT dr.*, 
-                   (6371 * acos(cos(radians($3)) * cos(radians(COALESCE(dr.pickup_latitude, 19.0760))) * 
-                    cos(radians(COALESCE(dr.pickup_longitude, 72.8777)) - radians($4)) + 
-                    sin(radians($3)) * sin(radians(COALESCE(dr.pickup_latitude, 19.0760))))) AS distance_km
+                   (6371 * acos(cos(radians(?)) * cos(radians(COALESCE(dr.pickup_latitude, 19.0760))) * 
+                    cos(radians(COALESCE(dr.pickup_longitude, 72.8777)) - radians(?)) + 
+                    sin(radians(?)) * sin(radians(COALESCE(dr.pickup_latitude, 19.0760))))) AS distance_km
             FROM donation_requests dr
             WHERE dr.status = 'pending' 
             AND dr.volunteer_id IS NULL
             AND EXISTS (
                 SELECT 1 FROM volunteer_availability va 
-                WHERE va.volunteer_id = $1 
-                AND va.day_of_week = $2 
-                AND va.start_time <= $5 
-                AND va.end_time >= $5 
+                WHERE va.volunteer_id = ? 
+                AND va.day_of_week = ? 
+                AND va.start_time <= ? 
+                AND va.end_time >= ? 
                 AND va.is_active = true
-                AND (6371 * acos(cos(radians(COALESCE(va.latitude, $3))) * cos(radians(COALESCE(dr.pickup_latitude, 19.0760))) * 
-                     cos(radians(COALESCE(dr.pickup_longitude, 72.8777)) - radians(COALESCE(va.longitude, $4))) + 
-                     sin(radians(COALESCE(va.latitude, $3))) * sin(radians(COALESCE(dr.pickup_latitude, 19.0760))))) <= va.max_radius_km
+                AND (6371 * acos(cos(radians(COALESCE(va.latitude, ?))) * cos(radians(COALESCE(dr.pickup_latitude, 19.0760))) * 
+                     cos(radians(COALESCE(dr.pickup_longitude, 72.8777)) - radians(COALESCE(va.longitude, ?))) + 
+                     sin(radians(COALESCE(va.latitude, ?))) * sin(radians(COALESCE(dr.pickup_latitude, 19.0760))))) <= va.max_radius_km
             )
             ORDER BY 
                 CASE WHEN dr.priority = 'urgent' THEN 1 
@@ -220,31 +443,34 @@ router.post("/api/volunteer/check-auto-assignments", ensureVolunteerAuthenticate
             LIMIT 5
         `;
         
-        const result = await pool.query(query, [
+        const result = await query(searchQuery, [
+            volunteer.latitude, 
+            volunteer.longitude,
+            volunteer.latitude,
             volunteerId, 
             currentDay, 
-            volunteer.latitude, 
-            volunteer.longitude, 
-            currentTime
+            currentTime,
+            currentTime,
+            volunteer.latitude,
+            volunteer.longitude,
+            volunteer.latitude
         ]);
         
-        const eligibleRequests = result.rows.filter(req => req.distance_km <= 25);
+        const eligibleRequests = result[0] ? result[0].filter(req => req.distance_km <= 25) : [];
         
         if (eligibleRequests.length === 0) {
             return res.json({ success: true, assignments: [] });
         }
         
-        // Auto-assign the most suitable request (highest priority, closest distance)
         const bestRequest = eligibleRequests[0];
         
-        await pool.query(
-            'UPDATE donation_requests SET volunteer_id = $1, status = $2, assigned_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+        await query(
+            'UPDATE donation_requests SET volunteer_id = ?, status = ?, assigned_at = CURRENT_TIMESTAMP WHERE id = ?',
             [volunteerId, 'assigned', bestRequest.id]
         );
         
-        // Track performance
-        await pool.query(
-            'INSERT INTO volunteer_performance (volunteer_id, request_id, assigned_at, response_time_minutes) VALUES ($1, $2, CURRENT_TIMESTAMP, 0)',
+        await query(
+            'INSERT INTO volunteer_performance (volunteer_id, request_id, assigned_at, response_time_minutes) VALUES (?, ?, CURRENT_TIMESTAMP, 0)',
             [volunteerId, bestRequest.id]
         );
         
@@ -267,33 +493,17 @@ router.post("/api/volunteer/check-auto-assignments", ensureVolunteerAuthenticate
 // Dashboard data API for auto-refresh
 router.get("/api/volunteer/dashboard-data", ensureVolunteerAuthenticated, async (req, res) => {
     try {
-        // Check for new requests since last check (simplified for demo)
-        const result = await pool.query(
-            'SELECT COUNT(*) as new_count FROM donation_requests WHERE created_at > NOW() - INTERVAL \'1 minute\' AND status = \'pending\''
+        const result = await query(
+            'SELECT COUNT(*) as new_count FROM donations WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) AND status = \'pending\' AND city LIKE ?',
+            [`%${req.session.volunteer.city || 'Pune'}%`]
         );
         
-        const newRequests = result.rows[0].new_count > 0;
+        const newRequests = result[0] && result[0][0] ? result[0][0].new_count > 0 : false;
         res.json({ newRequests });
     } catch (err) {
         console.log('Dashboard data error:', err);
-        res.json({ newRequests: Math.random() > 0.7 }); // Fallback to random
+        res.json({ newRequests: false });
     }
 });
 
 export default router;
-
-// Upload proof of delivery
-router.post("/volunteer/proof/:id", ensureVolunteerAuthenticated, upload.single("proof"), async (req, res) => {
-  const donationId = req.params.id;
-  const filePath = `/uploads/${path.basename(req.file.path)}`;
-  try {
-    await pool.query(
-      "UPDATE donations SET proof_image = ?, status = 'delivered' WHERE id = ? AND volunteer_id = ?",
-      [filePath, donationId, req.session.volunteer.id]
-    );
-    res.json({ success: true, file: filePath });
-  } catch (err) {
-    console.error("Proof upload error:", err);
-    res.status(500).json({ success: false });
-  }
-});

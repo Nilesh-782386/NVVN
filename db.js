@@ -1,27 +1,25 @@
-import pg from "pg";
+import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const { Pool } = pg;
-
-// Create PostgreSQL connection pool using Replit's built-in database
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-  acquireTimeoutMillis: 10000,
-  createTimeoutMillis: 10000,
+// Create MySQL connection pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'Nilesh@123',
+  database: process.env.DB_NAME || 'ngo_website',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 // Method to connect to the database
 const connect = async () => {
   try {
-    const client = await pool.connect();
-    console.log("Connected to PostgreSQL database");
-    client.release(); // release back to pool
+    const connection = await pool.getConnection();
+    console.log("Connected to MySQL database");
+    connection.release(); // release back to pool
   } catch (err) {
     console.error("Error connecting to the database:", err);
     throw err; // Important: re-throw the error
@@ -38,14 +36,15 @@ const disconnect = async () => {
   }
 };
 
-// Helper method to execute queries
+// ✅ FIXED: Helper method to execute queries - Proper MySQL result handling
 const query = async (text, params) => {
-  const client = await pool.connect();
+  const connection = await pool.getConnection();
   try {
-    const result = await client.query(text, params);
-    return result;
+    const [rows, fields] = await connection.execute(text, params);
+    // Return array format for MySQL compatibility
+    return [rows, fields];
   } finally {
-    client.release();
+    connection.release();
   }
 };
 

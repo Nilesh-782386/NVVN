@@ -1,5 +1,5 @@
 import express from "express";
-import { pool } from "../db.js";
+import { query } from "../db.js";
 import bcrypt from "bcrypt";
 
 const router = express.Router();
@@ -9,20 +9,20 @@ router.post(["/volunteer-register", "/volunteer/register"], async (req, res) => 
   const { name, email, phone, password, city, vehicle_type } = req.body;
   
   try {
-    const [checkRows] = await pool.query(
+    const checkResult = await query(
       "SELECT * FROM volunteers WHERE email = ?", 
       [email]
     );
     
-    if (checkRows.length > 0) {
+    if (checkResult[0] && checkResult[0].length > 0) {
       return res.redirect("/volunteer-register?error=exists");
     }
 
     const hash = await bcrypt.hash(password, 10);
-    await pool.query(
-      `INSERT INTO volunteers (name, email, phone, password, city, vehicle_type) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, email, phone, hash, city, vehicle_type]
+    await query(
+      `INSERT INTO volunteers (name, fullname, email, phone, password, city, vehicle_type) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [name, name, email, phone, hash, city, vehicle_type]
     );
 
     res.redirect("/volunteer-login?success=registered");
@@ -37,13 +37,13 @@ router.post(["/volunteer-login", "/volunteer/login"], async (req, res) => {
   const { email, password } = req.body;
   
   try {
-    const [rows] = await pool.query(
+    const result = await query(
       "SELECT * FROM volunteers WHERE email = ? AND status = 'active'", 
       [email]
     );
     
-    if (rows.length > 0) {
-      const volunteer = rows[0];
+    if (result[0] && result[0].length > 0) {
+      const volunteer = result[0][0];
       const valid = await bcrypt.compare(password, volunteer.password);
       
       if (valid) {
