@@ -39,11 +39,11 @@ router.post("/login", async (req, res) => {
   
   try {
     const result = await query("SELECT * FROM users WHERE email = ?", [email]);
-    console.log("🔍 DATABASE RESULT:", result[0]?.length || 0, "users found");
+    console.log("🔍 DATABASE RESULT:", result?.length || 0, "users found");
     
-    // ✅ FIXED: result[0] instead of result.rows
-    if (result[0] && result[0].length > 0) {
-      const user = result[0][0];
+    // ✅ FIXED: result is now direct array of rows
+    if (result && result.length > 0) {
+      const user = result[0];
       console.log("🔍 USER FOUND:", { id: user.id, email: user.email });
       
       const valid = await bcrypt.compare(password, user.password);
@@ -79,10 +79,10 @@ router.post("/ngo-login", async (req, res) => {
   try {
     const sqlQuery = "SELECT * FROM ngo_register WHERE email = ?";
     const result = await query(sqlQuery, [email]);
-    console.log("Database Result:", result[0]);
+    console.log("Database Result:", result);
     
-    if (result[0] && result[0].length > 0) {
-      const ngo = result[0][0];
+    if (result && result.length > 0) {
+      const ngo = result[0];
       console.log("Found NGO:", ngo.registration_number);
       
       if (ngo.registration_number === password) {
@@ -114,14 +114,14 @@ router.post("/register-user", async (req, res) => {
       "SELECT * FROM users WHERE email = ?",
       [email]
     );
-    // ✅ FIXED: checkResult[0] instead of result[0]
-    if (checkResult[0] && checkResult[0].length > 0) {
+    // ✅ FIXED: checkResult is now direct array
+    if (checkResult && checkResult.length > 0) {
       return res.redirect("/user-login");
     } else {
       const hash = await bcrypt.hash(password, saltRounds);
       await query(
-        "INSERT INTO users (fullname, phone, email, password, city) VALUES (?, ?, ?, ?, ?)",
-        [Fullname, phone, email, hash, city || 'Pune']
+        "INSERT INTO users (fullname, phone, email, password, city, district) VALUES (?, ?, ?, ?, ?, ?)",
+        [Fullname, phone, email, hash, city || 'Pune', (city || 'Pune').toLowerCase()]
       );
       return res.redirect("/user-login");
     }
@@ -200,6 +200,7 @@ router.post("/ngo-register", upload.single("file"), async (req, res) => {
         address,
         landmark,
         city,
+        district,
         state,
         pincode,
         description,
@@ -211,7 +212,7 @@ router.post("/ngo-register", upload.single("file"), async (req, res) => {
         longitude,
         ngo_type,
         can_accept_universal
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     console.log("📝 Inserting NGO into database...");
@@ -224,6 +225,7 @@ router.post("/ngo-register", upload.single("file"), async (req, res) => {
       addline,
       land,
       city,
+      city.toLowerCase(), // Set district same as city (lowercase)
       state,
       pincode,
       optnote,
@@ -238,7 +240,7 @@ router.post("/ngo-register", upload.single("file"), async (req, res) => {
     ]);
     
     console.log("✅ NGO Registration Successful:");
-    console.log("NGO ID:", result[0].insertId);
+    console.log("NGO ID:", result.insertId);
     console.log("NGO Name:", name);
     console.log("Email:", email);
     console.log("Status: applied");

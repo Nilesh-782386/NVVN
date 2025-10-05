@@ -31,10 +31,10 @@ router.post("/login", async (req, res) => {
       [email]
     );
     
-    console.log("Admin query result:", admins[0]);
+    console.log("Admin query result:", admins);
     
-    if (admins[0].length > 0) {
-      const admin = admins[0][0];
+    if (admins.length > 0) {
+      const admin = admins[0];
       console.log("Admin found:", admin.email);
       const bcrypt = await import('bcrypt');
       const validPassword = await bcrypt.compare(password, admin.password);
@@ -117,30 +117,30 @@ router.get("/dashboard", async (req, res) => {
     res.render("admin/dashboard", {
       admin: req.session.admin,
       analytics: {
-        donations: donationAnalytics[0][0] || { 
+        donations: donationAnalytics[0] || { 
           total_donations: 0, 
           completed_donations: 0, 
           pending_donations: 0,
           assigned_donations: 0,
           cities_covered: 0
         },
-        ngos: ngoAnalytics[0][0] || {
+        ngos: ngoAnalytics[0] || {
           total_ngos: 0,
           verified_ngos: 0,
           pending_ngos: 0,
           suspended_ngos: 0
         },
-        volunteers: volunteerAnalytics[0][0] || {
+        volunteers: volunteerAnalytics[0] || {
           total_volunteers: 0,
           available_volunteers: 0,
           busy_volunteers: 0
         },
-        users: userAnalytics[0][0] || {
+        users: userAnalytics[0] || {
           total_users: 0
         }
       },
-      recentDonations: recentDonations[0] || [],
-      recentNGOs: recentNGOs[0] || []
+      recentDonations: recentDonations || [],
+      recentNGOs: recentNGOs || []
     });
   } catch (error) {
     console.error("Admin dashboard error:", error);
@@ -195,19 +195,19 @@ router.get("/ngos", async (req, res) => {
     const suspendedResult = await query("SELECT COUNT(*) as suspended FROM ngo_register WHERE status = 'suspended'");
 
     console.log("📊 NGO data prepared for rendering:");
-    console.log("Total NGOs:", totalResult[0][0].total);
-    console.log("Applied NGOs:", appliedResult[0][0].applied);
-    console.log("Verified NGOs:", verifiedResult[0][0].verified);
-    console.log("Suspended NGOs:", suspendedResult[0][0].suspended);
-    console.log("NGOs array length:", ngos[0] ? ngos[0].length : 0);
-    console.log("NGOs data:", ngos[0]);
+    console.log("Total NGOs:", totalResult[0].total);
+    console.log("Applied NGOs:", appliedResult[0].applied);
+    console.log("Verified NGOs:", verifiedResult[0].verified);
+    console.log("Suspended NGOs:", suspendedResult[0].suspended);
+    console.log("NGOs array length:", ngos ? ngos.length : 0);
+    console.log("NGOs data:", ngos);
     
     res.render("admin/VerifyNGOs", {
-      ngos: ngos[0] || [],
-      total: totalResult[0][0].total,
-      applied: appliedResult[0][0].applied,
-      verified: verifiedResult[0][0].verified,
-      suspended: suspendedResult[0][0].suspended,
+      ngos: ngos || [],
+      total: totalResult[0].total,
+      applied: appliedResult[0].applied,
+      verified: verifiedResult[0].verified,
+      suspended: suspendedResult[0].suspended,
       filterSearch: search || '',
       filterStatus: status || '',
       filterCity: city || ''
@@ -253,8 +253,8 @@ router.get("/ngos/:id/certificate", async (req, res) => {
       [id]
     );
 
-    if (result[0] && result[0].length > 0 && result[0][0].registration_certificate) {
-      const filename = result[0][0].registration_certificate;
+    if (result && result.length > 0 && result[0].registration_certificate) {
+      const filename = result[0].registration_certificate;
       const filePath = path.join(process.cwd(), "upload", filename);
       
       if (fs.existsSync(filePath)) {
@@ -314,12 +314,12 @@ router.get("/donations", async (req, res) => {
     `, params);
 
     // Calculate statistics
-    const totalRequests = donations[0].length;
-    const activeCount = donations[0].filter(d => d.status === 'pending' || d.status === 'assigned').length;
-    const completedCount = donations[0].filter(d => d.status === 'completed').length;
+    const totalRequests = donations.length;
+    const activeCount = donations.filter(d => d.status === 'pending' || d.status === 'assigned').length;
+    const completedCount = donations.filter(d => d.status === 'completed').length;
 
     res.render("admin/AllDonations", {
-      donations: donations[0] || [],
+      donations: donations || [],
       totalRequests,
       activeCount,
       completedCount,
@@ -350,7 +350,7 @@ router.get("/volunteers", async (req, res) => {
     `);
 
     res.render("volunteer/list", {
-      volunteers: volunteers[0] || []
+      volunteers: volunteers || []
     });
   } catch (error) {
     console.error("Volunteers view error:", error);

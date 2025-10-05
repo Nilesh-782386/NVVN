@@ -21,7 +21,7 @@ router.get("/dashboard/ngo", ensureNGOAuthenticated, async (req, res) => {
     
     // Get completed donations
     const completedResult = await query(
-      "SELECT * FROM donations WHERE status = 'delivered' OR status = 'completed' ORDER BY updated_at DESC"
+      "SELECT * FROM donations WHERE status = 'delivered' OR status = 'completed' ORDER BY assigned_at DESC"
     );
     
     // Get assigned volunteers (unique volunteers with active donations)
@@ -298,7 +298,7 @@ router.post("/ngo/complete-donation/:id", ensureNGOAuthenticated, async (req, re
     const donationId = req.params.id;
     
     await query(
-      "UPDATE donations SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      "UPDATE donations SET status = 'completed' WHERE id = ?",
       [donationId]
     );
     

@@ -12,6 +12,11 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  // Add these to ensure clean JSON output
+  stringifyObjects: true,
+  dateStrings: true,
+  supportBigNumbers: true,
+  bigNumberStrings: true
 });
 
 // Method to connect to the database
@@ -36,13 +41,13 @@ const disconnect = async () => {
   }
 };
 
-// ✅ FIXED: Helper method to execute queries - Proper MySQL result handling
+// ✅ FIXED: Helper method to execute queries - Return clean JSON objects
 const query = async (text, params) => {
   const connection = await pool.getConnection();
   try {
     const [rows, fields] = await connection.execute(text, params);
-    // Return array format for MySQL compatibility
-    return [rows, fields];
+    // Return only the clean rows, not the raw protocol data
+    return rows;
   } finally {
     connection.release();
   }

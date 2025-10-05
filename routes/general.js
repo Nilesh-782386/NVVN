@@ -120,16 +120,16 @@ router.get("/volunteer-dashboard", ensureVolunteerAuthenticated, async (req, res
       [volunteerId]
     );
     
-    const volunteerDistrict = volunteerResult[0] && volunteerResult[0][0] ? volunteerResult[0][0].district : null;
+    const volunteerDistrict = volunteerResult && volunteerResult[0] ? volunteerResult[0].district : null;
     console.log("🔍 VOLUNTEER DASHBOARD - Volunteer District:", volunteerDistrict);
     
-    // Get assigned donations in the volunteer's district
+    // Get assigned donations in the volunteer's district (case insensitive)
     const availableResult = await query(`
       SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
       FROM donations d 
       LEFT JOIN users u ON d.user_id = u.id 
       LEFT JOIN ngo_register n ON d.ngo_id = n.id
-      WHERE d.district = ? AND d.status = 'assigned' AND d.volunteer_id IS NULL
+      WHERE LOWER(d.district) = LOWER(?) AND d.status = 'assigned' AND d.volunteer_id IS NULL
       ORDER BY 
         CASE d.priority 
           WHEN 'critical' THEN 1 
@@ -140,8 +140,8 @@ router.get("/volunteer-dashboard", ensureVolunteerAuthenticated, async (req, res
         d.created_at DESC
     `, [volunteerDistrict]);
 
-    console.log("🔍 VOLUNTEER DASHBOARD - Available donations count:", availableResult[0]?.length || 0);
-    console.log("🔍 VOLUNTEER DASHBOARD - Available donations:", availableResult[0]);
+    console.log("🔍 VOLUNTEER DASHBOARD - Available donations count:", availableResult?.length || 0);
+    console.log("🔍 VOLUNTEER DASHBOARD - Available donations:", availableResult);
 
     // Your assignments
     const myDonationsResult = await query(`
@@ -161,17 +161,17 @@ router.get("/volunteer-dashboard", ensureVolunteerAuthenticated, async (req, res
         d.created_at DESC
     `, [volunteerId]);
 
-    console.log("🔍 VOLUNTEER DASHBOARD - My donations count:", myDonationsResult[0]?.length || 0);
+    console.log("🔍 VOLUNTEER DASHBOARD - My donations count:", myDonationsResult?.length || 0);
     console.log("🔍 VOLUNTEER DASHBOARD - Rendering with data:", {
-      availableCount: availableResult[0]?.length || 0,
-      myCount: myDonationsResult[0]?.length || 0
+      availableCount: availableResult?.length || 0,
+      myCount: myDonationsResult?.length || 0
     });
 
     res.render("dashboards/volunteer-dashboard", {
       currentPage: 'volunteer-dashboard',
       volunteer: req.session.volunteer,
-      availableDonations: availableResult[0] || [],
-      myDonations: myDonationsResult[0] || []
+      availableDonations: availableResult || [],
+      myDonations: myDonationsResult || []
     });
   } catch (err) {
     console.error("Volunteer Dashboard error:", err);
@@ -196,168 +196,11 @@ router.post("/query", async (req, res) => {
 
 // NGO Dashboard route moved to ngo-dashboard.js to avoid duplication
 
-// NGO Approval Routes - UPDATED FOR NEW WORKFLOW
-router.post("/ngo/approve-donation/:id", ensureNGOAuthenticated, async (req, res) => {
-  try {
-    const donationId = req.params.id;
-    const ngoId = req.session.ngo.id;
-    const ngoCity = req.session.ngo.city;
-    
-    // Check AI distribution limits first
-    const aiDistributionService = (await import("../services/aiDistributionService.js")).default;
-    const canApprove = await aiDistributionService.canApproveRequest(ngoId, donationId);
-    
-    if (!canApprove.canApprove) {
-      return res.status(400).json({ 
-        success: false, 
-        error: canApprove.reason,
-        isLimitReached: !canApprove.isCritical
-      });
-    }
-    
-    // Verify the donation is pending and in the same city
-    const [checkResult] = await query(
-      "SELECT id FROM donations WHERE id = ? AND ngo_approval_status = 'pending' AND city = ? AND status = 'pending_approval'",
-      [donationId, ngoCity]
-    );
-    
-    if (!checkResult[0] || checkResult[0].length === 0) {
-      return res.status(404).json({ success: false, message: "Donation not found or not eligible for approval" });
-    }
-    
-    // Assign donation to this NGO and mark as approved
-    await query(
-      "UPDATE donations SET ngo_id = ?, ngo_approval_status = 'approved', status = 'assigned', assigned_at = NOW() WHERE id = ?",
-      [ngoId, donationId]
-    );
-    
-    // Record the approval in AI distribution system
-    await aiDistributionService.recordApproval(ngoId, donationId);
-    
-    res.json({ 
-      success: true, 
-      message: canApprove.isCritical 
-        ? "Critical donation approved! (No limit applied)" 
-        : `Donation approved! (${canApprove.remaining - 1} approvals remaining today)`,
-      remaining: canApprove.remaining - 1,
-      isCritical: canApprove.isCritical
-    });
-  } catch (error) {
-    console.error("Approve donation error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+// NGO Approval Routes - MOVED TO ngo-dashboard.js to avoid duplication
 
-// API route for NGO approval (used by frontend)
-router.post("/api/ngo/approve-donation/:id", ensureNGOAuthenticated, async (req, res) => {
-  try {
-    const donationId = req.params.id;
-    const ngoId = req.session.ngo.id;
-    const ngoCity = req.session.ngo.city;
-    
-    // Check AI distribution limits first
-    const aiDistributionService = (await import("../services/aiDistributionService.js")).default;
-    const canApprove = await aiDistributionService.canApproveRequest(ngoId, donationId);
-    
-    if (!canApprove.canApprove) {
-      return res.status(400).json({ 
-        success: false, 
-        error: canApprove.reason,
-        isLimitReached: !canApprove.isCritical
-      });
-    }
-    
-    // Verify the donation is pending and in the same city
-    const [checkResult] = await query(
-      "SELECT id FROM donations WHERE id = ? AND ngo_approval_status = 'pending' AND city = ? AND status = 'pending_approval'",
-      [donationId, ngoCity]
-    );
-    
-    if (!checkResult[0] || checkResult[0].length === 0) {
-      return res.status(404).json({ success: false, message: "Donation not found or not eligible for approval" });
-    }
-    
-    // Assign donation to this NGO and mark as approved
-    await query(
-      "UPDATE donations SET ngo_id = ?, ngo_approval_status = 'approved', status = 'assigned', assigned_at = NOW() WHERE id = ?",
-      [ngoId, donationId]
-    );
-    
-    // Record the approval in AI distribution system
-    await aiDistributionService.recordApproval(ngoId, donationId);
-    
-    res.json({ 
-      success: true, 
-      message: canApprove.isCritical 
-        ? "Critical donation approved! (No limit applied)" 
-        : `Donation approved! (${canApprove.remaining - 1} approvals remaining today)`,
-      remaining: canApprove.remaining - 1,
-      isCritical: canApprove.isCritical
-    });
-  } catch (error) {
-    console.error("Approve donation error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+// NGO rejection route moved to ngo-dashboard.js to avoid duplication
 
-// API route for NGO rejection (used by frontend)
-router.post("/api/ngo/reject-donation/:id", ensureNGOAuthenticated, async (req, res) => {
-  try {
-    const donationId = req.params.id;
-    const ngoId = req.session.ngo.id;
-    const ngoCity = req.session.ngo.city;
-    
-    // Verify the donation is pending and in the same city
-    const [checkResult] = await query(
-      "SELECT id FROM donations WHERE id = ? AND ngo_approval_status = 'pending' AND city = ? AND status = 'pending_approval'",
-      [donationId, ngoCity]
-    );
-    
-    if (!checkResult[0] || checkResult[0].length === 0) {
-      return res.status(404).json({ success: false, message: "Donation not found or not eligible for rejection" });
-    }
-    
-    // Mark donation as rejected by this NGO (but keep it available for other NGOs)
-    await query(
-      "UPDATE donations SET ngo_approval_status = 'rejected' WHERE id = ?",
-      [donationId]
-    );
-    
-    res.json({ success: true, message: "Donation rejected. Other NGOs can still approve this request." });
-  } catch (error) {
-    console.error("Reject donation error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-router.post("/ngo/reject-donation/:id", ensureNGOAuthenticated, async (req, res) => {
-  try {
-    const donationId = req.params.id;
-    const ngoId = req.session.ngo.id;
-    const ngoCity = req.session.ngo.city;
-    
-    // Verify the donation is pending and in the same city
-    const [checkResult] = await query(
-      "SELECT id FROM donations WHERE id = ? AND ngo_approval_status = 'pending' AND city = ? AND status = 'pending_approval'",
-      [donationId, ngoCity]
-    );
-    
-    if (!checkResult[0] || checkResult[0].length === 0) {
-      return res.status(404).json({ success: false, message: "Donation not found or not eligible for rejection" });
-    }
-    
-    // Mark as rejected by this NGO (but keep visible to other NGOs)
-    await query(
-      "UPDATE donations SET ngo_approval_status = 'rejected' WHERE id = ?",
-      [donationId]
-    );
-    
-    res.json({ success: true, message: "Donation rejected. Other NGOs can still approve it." });
-  } catch (error) {
-    console.error("Reject donation error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+// All NGO routes moved to ngo-dashboard.js to avoid duplication
 
 // API: Get all volunteers
 router.get("/api/volunteers", ensureAdminAuthenticated, async (req, res) => {
@@ -394,10 +237,10 @@ router.get("/api/volunteers/:id", ensureAdminAuthenticated, async (req, res) => 
       WHERE v.id = ?
     `, [volunteerId]);
     
-    if (result[0] && result[0].length > 0) {
+    if (result && result.length > 0) {
       res.json({ 
         success: true, 
-        volunteer: result[0][0] 
+        volunteer: result[0] 
       });
     } else {
       res.status(404).json({ 

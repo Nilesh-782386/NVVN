@@ -362,6 +362,11 @@
         </div>
 
             <!-- City Donation Requests Section -->
+            <script>
+                console.log('🔍 Template Debug - cityDonations:', <%= JSON.stringify(cityDonations || []).replace(/</g, '\\u003c') %>);
+                console.log('🔍 Template Debug - cityDonations.length:', <%= (cityDonations || []).length %>);
+                console.log('🔍 Template Debug - ngo:', <%= JSON.stringify(ngo || {}).replace(/</g, '\\u003c') %>);
+            </script>
             <% if (cityDonations && cityDonations.length > 0) { %>
             <div class="section-card" style="background: #e3f2fd; border: 1px solid #90caf9; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
                 <h3><i class="fas fa-map-marker-alt text-primary"></i> Donation Requests in <%= ngo.city %> (<%= cityDonations.length %>)</h3>
@@ -618,15 +623,51 @@
                 return;
             }
             
+            // Show loading state
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            button.disabled = true;
+            
             try {
+                console.log('🚀 Starting approval for donation:', donationId);
+                
                 const response = await fetch(`/api/ngo/approve-donation/${donationId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                    },
+                    credentials: 'same-origin' // Ensure cookies are sent
                 });
                 
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    console.error('❌ HTTP Error:', response.status, response.statusText);
+                    
+                    // Try to get error details
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch (parseError) {
+                        console.error('❌ Failed to parse error response:', parseError);
+                        errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+                    }
+                    
+                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('❌ Non-JSON response received:', text);
+                    throw new Error('Server returned invalid response format');
+                }
+                
                 const result = await response.json();
+                console.log('✅ Approval result:', result);
                 
                 if (result.success) {
                     let message = result.message || 'Donation approved successfully!';
@@ -635,19 +676,105 @@
                     } else if (result.remaining !== undefined) {
                         message += ` (${result.remaining} approvals remaining today)`;
                     }
-                    alert(message);
-                    location.reload(); // Refresh the page to show updated data
+                    
+                    console.log('✅ Approval successful, refreshing page...');
+                    
+                    // Show success message
+                    showSuccessMessage(message);
+                    
+                    // Refresh the page to show updated data
+                    setTimeout(() => {
+                        console.log('🔄 Reloading page to show updated data...');
+                        location.reload();
+                    }, 1500);
                 } else {
-                    let errorMessage = result.error || 'Unknown error';
-                    if (result.isLimitReached) {
-                        errorMessage += '\n\nTip: Critical items (food, medicine) don\'t count toward daily limits.';
-                    }
-                    alert('Failed to approve donation: ' + errorMessage);
+                    throw new Error(result.error || 'Unknown error occurred');
                 }
             } catch (error) {
-                console.error('Error approving donation:', error);
-                alert('Error approving donation. Please try again.');
+                console.error('❌ Approval error:', error);
+                
+                // Handle JSON parsing errors specifically
+                let errorMessage;
+                let errorType = 'error';
+                
+                if (error.message.includes('Unexpected token') || error.message.includes('JSON')) {
+                    console.error('❌ JSON parsing error detected');
+                    errorMessage = 'Server communication error. Please refresh the page and try again.';
+                    errorType = 'communication';
+                } else {
+                    // Determine error type and show appropriate message
+                    errorMessage = error.message || 'An unexpected error occurred';
+                }
+                
+                if (error.message.includes('Session expired')) {
+                    errorType = 'session';
+                    errorMessage = 'Your session has expired. Please log in again.';
+                } else if (error.message.includes('already processed')) {
+                    errorType = 'conflict';
+                    errorMessage = 'This donation has already been processed by another NGO.';
+                } else if (error.message.includes('Daily limit reached')) {
+                    errorType = 'limit';
+                    errorMessage = 'You have reached your daily approval limit. Try again tomorrow or contact admin for critical items.';
+                } else if (error.message.includes('not in your district')) {
+                    errorType = 'district';
+                    errorMessage = 'This donation is not in your service area.';
+                } else if (error.message.includes('not verified')) {
+                    errorType = 'permission';
+                    errorMessage = 'Your NGO must be verified by admin before approving donations.';
+                }
+                
+                showErrorMessage(errorMessage, errorType);
+            } finally {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
             }
+        }
+        
+        function showSuccessMessage(message) {
+            // Create success notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="fas fa-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        function showErrorMessage(message, type = 'error') {
+            // Create error notification
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'session' ? 'warning' : 'danger'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            
+            let icon = 'fas fa-exclamation-triangle';
+            if (type === 'session') icon = 'fas fa-user-clock';
+            else if (type === 'conflict') icon = 'fas fa-info-circle';
+            else if (type === 'limit') icon = 'fas fa-chart-line';
+            else if (type === 'district') icon = 'fas fa-map-marker-alt';
+            else if (type === 'permission') icon = 'fas fa-lock';
+            
+            notification.innerHTML = `
+                <i class="${icon}"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 8 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 8000);
         }
         
         async function rejectDonation(donationId) {

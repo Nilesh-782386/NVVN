@@ -17,9 +17,9 @@ router.get("/ngo/dashboard", ensureNGOAuthenticated, async (req, res) => {
       "SELECT * FROM donations WHERE status = 'assigned' ORDER BY assigned_at DESC"
     );
     const deliveredResult = await query(
-      "SELECT * FROM donations WHERE status = 'delivered' ORDER BY updated_at DESC"
+      "SELECT * FROM donations WHERE status = 'delivered' ORDER BY assigned_at DESC"
     );
-    res.render("ngo/dashboard", { open: openResult[0], assigned: assignedResult[0], delivered: deliveredResult[0], ngo: req.session.ngo });
+    res.render("ngo/dashboard", { open: openResult, assigned: assignedResult, delivered: deliveredResult, ngo: req.session.ngo });
   } catch (e) {
     console.error(e);
     res.status(500).send("Server error");
@@ -75,7 +75,7 @@ router.get("admin/all-donations", ensureNGOAuthenticated, async (req, res) => {
     
     const countQuery = `SELECT COUNT(*) as count FROM donations ${whereSQL}`;
     const countResult = await query(countQuery, values);
-    const total = parseInt(countResult[0][0].count);
+    const total = parseInt(countResult[0].count);
     
     const totalPages = Math.ceil(total / limit);
     
@@ -84,14 +84,14 @@ router.get("admin/all-donations", ensureNGOAuthenticated, async (req, res) => {
     const activeResult = await query("SELECT COUNT(*) as count FROM donations WHERE status = 'pending'");
     
     res.render("admin/AllDonations", {
-      donations: rowsResult[0],
+      donations: rowsResult,
       currentPage: page,
       totalPages,
       user: req.session.user,
       ngo: req.session.ngo,
-      totalRequests: parseInt(totalRequestsResult[0][0].count),
-      completedCount: parseInt(completedResult[0][0].count),
-      activeCount: parseInt(activeResult[0][0].count),
+      totalRequests: parseInt(totalRequestsResult[0].count),
+      completedCount: parseInt(completedResult[0].count),
+      activeCount: parseInt(activeResult[0].count),
       filterStatus: status || "",
       filterCity: city || "",
       filterSearch: search || "",

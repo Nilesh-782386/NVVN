@@ -14,15 +14,15 @@ router.post(["/volunteer-register", "/volunteer/register"], async (req, res) => 
       [email]
     );
     
-    if (checkResult[0] && checkResult[0].length > 0) {
+    if (checkResult && checkResult.length > 0) {
       return res.redirect("/volunteer-register?error=exists");
     }
 
     const hash = await bcrypt.hash(password, 10);
     await query(
-      `INSERT INTO volunteers (name, fullname, email, phone, password, city, vehicle_type) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, name, email, phone, hash, city, vehicle_type]
+      `INSERT INTO volunteers (name, fullname, email, phone, password, city, district, vehicle_type) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, name, email, phone, hash, city, city.toLowerCase(), vehicle_type]
     );
 
     res.redirect("/volunteer-login?success=registered");
@@ -42,8 +42,8 @@ router.post(["/volunteer-login", "/volunteer/login"], async (req, res) => {
       [email]
     );
     
-    if (result[0] && result[0].length > 0) {
-      const volunteer = result[0][0];
+    if (result && result.length > 0) {
+      const volunteer = result[0];
       const valid = await bcrypt.compare(password, volunteer.password);
       
       if (valid) {

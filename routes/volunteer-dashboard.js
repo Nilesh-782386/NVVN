@@ -45,7 +45,7 @@ router.get("/volunteer/my-requests", ensureVolunteerAuthenticated, async (req, r
     
     res.json({ 
       success: true, 
-      requests: result[0] || [],
+      requests: result || [],
       volunteer: req.session.volunteer
     });
   } catch (error) {
@@ -56,7 +56,10 @@ router.get("/volunteer/my-requests", ensureVolunteerAuthenticated, async (req, r
 
 router.get("/volunteer/available", ensureVolunteerAuthenticated, async (req, res) => {
   try {
+    console.log("🔍 Volunteer available route called");
     const volunteerId = req.session.volunteer.id;
+    console.log("🔍 Volunteer ID:", volunteerId);
+    console.log("🔍 Volunteer session:", req.session.volunteer);
     
     // Get volunteer's district
     const volunteerResult = await query(
@@ -64,15 +67,17 @@ router.get("/volunteer/available", ensureVolunteerAuthenticated, async (req, res
       [volunteerId]
     );
     
-    const volunteerDistrict = volunteerResult[0] && volunteerResult[0][0] ? volunteerResult[0][0].district : null;
+    const volunteerDistrict = volunteerResult && volunteerResult[0] ? volunteerResult[0].district : null;
+    console.log("🔍 Volunteer district:", volunteerDistrict);
     
-    // Get available requests in volunteer's district
+    // Get available requests in volunteer's district (case insensitive)
+    console.log("🔍 Querying available donations for district:", volunteerDistrict);
     const result = await query(`
       SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
       FROM donations d 
       LEFT JOIN users u ON d.user_id = u.id 
       LEFT JOIN ngo_register n ON d.ngo_id = n.id
-      WHERE d.district = ? AND d.status = 'assigned' AND d.volunteer_id IS NULL
+      WHERE LOWER(d.district) = LOWER(?) AND d.status = 'assigned' AND d.volunteer_id IS NULL
       ORDER BY 
         CASE d.priority 
           WHEN 'critical' THEN 1 
@@ -83,13 +88,19 @@ router.get("/volunteer/available", ensureVolunteerAuthenticated, async (req, res
         d.created_at DESC
     `, [volunteerDistrict]);
     
+    console.log("🔍 Available donations found:", result.length);
+    if (result.length > 0) {
+      console.log("🔍 First donation:", result[0].id, result[0].donor_name);
+    }
+    
     // Construct clean JSON response
     const response = {
       success: true,
-      requests: result[0] || [],
+      requests: result || [],
       volunteer: req.session.volunteer || {}
     };
     
+    console.log("🔍 Sending response with", response.requests.length, "requests");
     // Send validated JSON
     res.json(response);
     
@@ -120,15 +131,15 @@ router.get("/volunteer-dashboard-data", ensureVolunteerAuthenticated, async (req
       [volunteerId]
     );
     
-    const volunteerDistrict = volunteerResult[0] && volunteerResult[0][0] ? volunteerResult[0][0].district : null;
+    const volunteerDistrict = volunteerResult && volunteerResult[0] ? volunteerResult[0].district : null;
     
-    // Get assigned donations in the volunteer's district
+    // Get assigned donations in the volunteer's district (case insensitive)
     const availableResult = await query(`
       SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
       FROM donations d 
       LEFT JOIN users u ON d.user_id = u.id 
       LEFT JOIN ngo_register n ON d.ngo_id = n.id
-      WHERE d.district = ? AND d.status = 'assigned' AND d.volunteer_id IS NULL
+      WHERE LOWER(d.district) = LOWER(?) AND d.status = 'assigned' AND d.volunteer_id IS NULL
       ORDER BY 
         CASE d.priority 
           WHEN 'critical' THEN 1 
@@ -208,19 +219,55 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
   const volunteerId = req.session.volunteer.id;
 
   try {
+    console.log("🔍 Accept donation called");
+    console.log("🔍 Donation ID:", donationId);
+    console.log("🔍 Volunteer ID:", volunteerId);
+    console.log("🔍 Volunteer session:", req.session.volunteer);
+
     const volunteerName = req.session.volunteer.name || 
                          req.session.volunteer.fullname || 
                          req.session.volunteer.email;
     const volunteerPhone = req.session.volunteer.phone || '';
 
-    await query(
-      "UPDATE donations SET volunteer_id = ?, volunteer_name = ?, volunteer_phone = ?, status = 'assigned', assigned_at = NOW() WHERE id = ? AND (volunteer_id IS NULL OR volunteer_id = '')",
+    console.log("🔍 Volunteer name:", volunteerName);
+    console.log("🔍 Volunteer phone:", volunteerPhone);
+
+    // Check if donation exists and is available
+    const donationCheck = await query(
+      "SELECT id, status, volunteer_id, district FROM donations WHERE id = ?",
+      [donationId]
+    );
+
+    if (!donationCheck || donationCheck.length === 0) {
+      console.log("❌ Donation not found");
+      return res.json({ success: false, message: "Donation not found" });
+    }
+
+    const donation = donationCheck[0];
+    console.log("🔍 Donation found:", donation);
+
+    if (donation.volunteer_id !== null) {
+      console.log("❌ Donation already assigned to volunteer:", donation.volunteer_id);
+      return res.json({ success: false, message: "Donation already assigned to another volunteer" });
+    }
+
+    const updateResult = await query(
+      "UPDATE donations SET volunteer_id = ?, volunteer_name = ?, volunteer_phone = ?, assigned_at = NOW() WHERE id = ? AND (volunteer_id IS NULL OR volunteer_id = '')",
       [volunteerId, volunteerName, volunteerPhone, donationId]
     );
+
+    console.log("🔍 Update result:", updateResult);
+    console.log("🔍 Rows affected:", updateResult.affectedRows);
+
+    if (updateResult.affectedRows === 0) {
+      console.log("❌ No rows updated - donation may already be assigned");
+      return res.json({ success: false, message: "Donation is no longer available" });
+    }
     
+    console.log("✅ Donation accepted successfully");
     res.json({ success: true, message: "Donation accepted successfully" });
   } catch (err) {
-    console.error("Accept error:", err);
+    console.error("❌ Accept error:", err);
     res.json({ success: false, message: "Failed to accept donation" });
   }
 });
@@ -231,14 +278,52 @@ router.post("/volunteer/pickup/:id", ensureVolunteerAuthenticated, async (req, r
   const volunteerId = req.session.volunteer.id;
 
   try {
-    await query(
+    console.log("🔍 Pickup request received");
+    console.log("🔍 Donation ID:", donationId);
+    console.log("🔍 Volunteer ID:", volunteerId);
+    console.log("🔍 Volunteer session:", req.session.volunteer);
+
+    // Check if donation exists and is assigned to this volunteer
+    const donationCheck = await query(
+      "SELECT id, status, volunteer_id, volunteer_name FROM donations WHERE id = ?",
+      [donationId]
+    );
+
+    if (!donationCheck || donationCheck.length === 0) {
+      console.log("❌ Donation not found");
+      return res.json({ success: false, message: "Donation not found" });
+    }
+
+    const donation = donationCheck[0];
+    console.log("🔍 Donation found:", donation);
+
+    if (donation.volunteer_id !== volunteerId) {
+      console.log("❌ Donation not assigned to this volunteer");
+      return res.json({ success: false, message: "Donation not assigned to you" });
+    }
+
+    if (donation.status !== 'assigned') {
+      console.log("❌ Donation not in assigned status:", donation.status);
+      return res.json({ success: false, message: `Donation is already ${donation.status}` });
+    }
+
+    const updateResult = await query(
       "UPDATE donations SET status = 'picked_up' WHERE id = ? AND volunteer_id = ?",
       [donationId, volunteerId]
     );
 
+    console.log("🔍 Update result:", updateResult);
+    console.log("🔍 Rows affected:", updateResult.affectedRows);
+
+    if (updateResult.affectedRows === 0) {
+      console.log("❌ No rows updated");
+      return res.json({ success: false, message: "Failed to update donation status" });
+    }
+
+    console.log("✅ Donation marked as picked up successfully");
     res.json({ success: true, message: "Donation marked as picked up" });
   } catch (err) {
-    console.error("Pickup error:", err);
+    console.error("❌ Pickup error:", err);
     res.json({ success: false, message: "Failed to update status" });
   }
 });

@@ -631,22 +631,49 @@
     
     function markPickedUp(donationId) {
       if (confirm('Confirm that you have picked up this donation?')) {
+        console.log('🚀 Starting pickup for donation:', donationId);
+        
         fetch(`/volunteer/pickup/${donationId}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin'
         })
-        .then(response => response.json())
+        .then(response => {
+          console.log('📡 Pickup response status:', response.status);
+          
+          // Check if response is JSON
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = response.text();
+            console.error('❌ Non-JSON response received:', text);
+            throw new Error('Server returned invalid response format');
+          }
+          
+          return response.json();
+        })
         .then(data => {
+          console.log('✅ Pickup result:', data);
+          
           if (data.success) {
             showNotification('Donation marked as picked up!', 'success');
-            setTimeout(() => window.location.reload(), 1500);
-        } else { 
-            showNotification('Error updating donation status', 'error');
+            setTimeout(() => {
+              console.log('🔄 Reloading page to show updated status...');
+              window.location.reload();
+            }, 1500);
+          } else {
+            console.error('❌ Pickup failed:', data.message);
+            showNotification(data.message || 'Error updating donation status', 'error');
           }
         })
         .catch(error => {
-          console.error('Error:', error);
-          showNotification('Error updating donation status', 'error');
+          console.error('❌ Pickup error:', error);
+          
+          // Handle JSON parsing errors specifically
+          if (error.message.includes('Unexpected token') || error.message.includes('JSON')) {
+            showNotification('Server communication error. Please refresh the page and try again.', 'error');
+          } else {
+            showNotification('Error updating donation status: ' + error.message, 'error');
+          }
         });
       }
     }

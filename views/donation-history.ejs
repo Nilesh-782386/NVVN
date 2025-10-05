@@ -160,6 +160,9 @@
                     </div>
                     <div class="col-auto">
                         <span class="badge bg-light text-dark" id="donationCount">0 donations</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" id="refreshBtn" title="Refresh donations">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -217,28 +220,60 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadDonations();
             
-            // Auto-refresh every 30 seconds for real-time updates
-            setInterval(loadDonations, 30000);
+            // Auto-refresh every 10 seconds for real-time updates
+            setInterval(loadDonations, 10000);
+            
+            // Add manual refresh button functionality
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    console.log('🔄 Manual refresh triggered');
+                    loadDonations();
+                });
+            }
         });
 
         async function loadDonations() {
             try {
+                console.log('🔄 Loading donations...');
+                
+                // Show loading indicator
+                const refreshBtn = document.getElementById('refreshBtn');
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    refreshBtn.disabled = true;
+                }
+                
                 const response = await fetch('/api/donations/history');
                 const data = await response.json();
                 
+                console.log('📡 API Response:', data);
+                
                 if (data.success) {
+                    console.log('✅ Donations loaded:', data.donations.length);
+                    console.log('📊 Donation statuses:', data.donations.map(d => `ID:${d.id} Status:${d.status} Volunteer:${d.volunteer_name || 'None'}`));
+                    
                     allDonations = data.donations;
                     filteredDonations = [...allDonations];
                     updateDonationCount();
                     renderTable();
                     renderPagination();
+                    
+                    console.log('✅ Page updated with latest data');
                 } else {
-                    console.error('Failed to load donations:', data.message);
+                    console.error('❌ Failed to load donations:', data.message);
                     showMessage('Failed to load donations', 'error');
                 }
             } catch (error) {
-                console.error('Error loading donations:', error);
+                console.error('❌ Error loading donations:', error);
                 showMessage('Error loading donations', 'error');
+            } finally {
+                // Reset refresh button
+                const refreshBtn = document.getElementById('refreshBtn');
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                    refreshBtn.disabled = false;
+                }
             }
         }
 

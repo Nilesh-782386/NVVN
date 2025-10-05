@@ -33,12 +33,19 @@ router.post("/submit-donation", ensureUserAuthenticated, async (req, res) => {
       custom_description.toLowerCase().includes('water')));
   
   try {
-    const result = await query(
-      `INSERT INTO donations (books, clothes, grains, footwear, toys, school_supplies, user_id, status, city, priority, ai_suggested_priority, final_priority, is_manual_override, is_custom_item, custom_description, custom_quantity, ngo_approval_status, is_universal_item)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_approval', ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
-      [books, clothes, grains, footwear, toys, schoolSupplies, userId, req.session.user.city || 'Pune', final_priority, ai_suggested_priority, final_priority, is_manual_override === 'true', isCustomItem ? 1 : 0, custom_description, custom_quantity, isUniversalItem ? 1 : 0]
+    // Get user's district for proper matching
+    const userResult = await query(
+      "SELECT district FROM users WHERE id = ?",
+      [userId]
     );
-    const donationId = result[0].insertId;
+    const userDistrict = userResult && userResult[0] ? userResult[0].district : (req.session.user.city || 'Pune').toLowerCase();
+    
+    const result = await query(
+      `INSERT INTO donations (books, clothes, grains, footwear, toys, school_supplies, user_id, status, city, district, priority, ai_suggested_priority, final_priority, is_manual_override, is_custom_item, custom_description, custom_quantity, ngo_approval_status, is_universal_item)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_approval', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+      [books, clothes, grains, footwear, toys, schoolSupplies, userId, req.session.user.city || 'Pune', userDistrict, final_priority, ai_suggested_priority, final_priority, is_manual_override === 'true', isCustomItem ? 1 : 0, custom_description, custom_quantity, isUniversalItem ? 1 : 0]
+    );
+    const donationId = result.insertId;
     res.redirect(`/submit-info?donationId=${donationId}`);
   } catch (err) {
     console.error("Donation submission error:", err);
@@ -124,11 +131,11 @@ router.get("/debug/all-donations", async (req, res) => {
     `);
     
     console.log("📊 ALL DONATIONS IN DATABASE:");
-    console.log(result[0]);
+    console.log(result);
     
-    res.json({ 
-      total: result[0]?.length || 0,
-      donations: result[0] || [] 
+    res.json({
+      total: result?.length || 0,
+      donations: result || []
     });
   } catch (err) {
     console.error("Debug error:", err);
@@ -145,11 +152,11 @@ router.get("/debug/create-test", async (req, res) => {
       VALUES (5, 10, 1, 'pending', 'Pune', 'Test', 'Donor', '1234567890', NOW())
     `);
     
-    console.log("✅ TEST DONATION CREATED, ID:", result[0].insertId);
+    console.log("✅ TEST DONATION CREATED, ID:", result.insertId);
     
-    res.json({ 
-      success: true, 
-      donationId: result[0].insertId,
+    res.json({
+      success: true,
+      donationId: result.insertId,
       message: "Test donation created successfully!" 
     });
   } catch (err) {
@@ -163,7 +170,7 @@ router.post("/donations/:id/complete", async (req, res) => {
   const { id } = req.params;
   try {
     await query(
-      "UPDATE donations SET status = 'completed', updated_at = NOW() WHERE id = ?",
+      "UPDATE donations SET status = 'completed' WHERE id = ?",
       [id]
     );
     res.json({ success: true });
@@ -178,7 +185,7 @@ router.post("/donations/:id/cancel", async (req, res) => {
   const { id } = req.params;
   try {
     await query(
-      "UPDATE donations SET status = 'cancelled', updated_at = NOW() WHERE id = ?",
+      "UPDATE donations SET status = 'cancelled' WHERE id = ?",
       [id]
     );
     res.json({ success: true });
@@ -200,8 +207,7 @@ router.post("/donations/:id/accept", async (req, res) => {
        volunteer_id = ?, 
        volunteer_name = ?, 
        volunteer_phone = ?,
-       assigned_at = NOW(),
-       updated_at = NOW() 
+       assigned_at = NOW()
        WHERE id = ? AND status = 'pending'`,
       [volunteerId, volunteerName, volunteerPhone, id]
     );
@@ -219,7 +225,7 @@ router.post("/donations/:id/pickup", async (req, res) => {
   
   try {
     await query(
-      "UPDATE donations SET status = 'picked_up', updated_at = NOW() WHERE id = ? AND status = 'assigned'",
+      "UPDATE donations SET status = 'picked_up' WHERE id = ? AND status = 'assigned'",
       [id]
     );
     
@@ -237,7 +243,7 @@ router.post("/donations/:id/deliver", async (req, res) => {
   
   try {
     await query(
-      "UPDATE donations SET status = 'delivered', ngo_id = ?, updated_at = NOW() WHERE id = ? AND status = 'picked_up'",
+      "UPDATE donations SET status = 'delivered', ngo_id = ? WHERE id = ? AND status = 'picked_up'",
       [ngoId, id]
     );
     
@@ -266,7 +272,7 @@ router.get("/api/donations/history", ensureUserAuthenticated, async (req, res) =
     
     res.json({ 
       success: true, 
-      donations: result[0] || [] 
+      donations: result || [] 
     });
   } catch (error) {
     console.error("Donation history error:", error);
@@ -293,10 +299,10 @@ router.get("/api/donations/:id", ensureUserAuthenticated, async (req, res) => {
       WHERE d.id = ? AND d.user_id = ?
     `, [donationId, userId]);
     
-    if (result[0] && result[0].length > 0) {
+    if (result && result.length > 0) {
       res.json({ 
         success: true, 
-        donation: result[0][0] 
+        donation: result[0] 
       });
     } else {
       res.status(404).json({ 
