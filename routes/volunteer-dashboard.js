@@ -158,7 +158,7 @@ router.get("/volunteer-dashboard-data", ensureVolunteerAuthenticated, async (req
     console.log("🐛 DEBUG - Available donations [0]:", availableResult[0]);
     console.log("🐛 DEBUG - Available donations [1]:", availableResult[1]);
 
-    // Your assignments
+    // Your assignmen
     const myDonationsResult = await query(`
       SELECT d.*, u.fullname as donor_name, n.ngo_name
       FROM donations d 
@@ -218,12 +218,15 @@ router.get("/debug/volunteer-info", ensureVolunteerAuthenticated, async (req, re
 router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, res) => {
   const donationId = req.params.id;
   const volunteerId = req.session.volunteer.id;
+  const { live_distance, live_location, accepted_distance } = req.body;
 
   try {
     console.log("🔍 Accept donation called");
     console.log("🔍 Donation ID:", donationId);
     console.log("🔍 Volunteer ID:", volunteerId);
-    console.log("🔍 Volunteer session:", req.session.volunteer);
+    console.log("🔍 Live distance:", live_distance);
+    console.log("🔍 Live location:", live_location);
+    console.log("🔍 Accepted distance:", accepted_distance);
 
     const volunteerName = req.session.volunteer.name || 
                          req.session.volunteer.fullname || 
@@ -266,13 +269,14 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
     }
     
     // NEW: Create assignment record for monitoring (ADD-ON)
+    let assignmentId = null;
     try {
       const assignmentResult = await query(`
         INSERT INTO volunteer_assignments (donation_id, volunteer_id, status, accepted_at)
         VALUES (?, ?, 'accepted', NOW())
       `, [donationId, volunteerId]);
       
-      const assignmentId = assignmentResult.insertId;
+      assignmentId = assignmentResult.insertId;
       
       // Update donation with assignment reference
       await query(`
@@ -284,8 +288,43 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
       console.error("⚠️ Assignment record creation failed (non-critical):", assignmentError);
     }
     
+    // NEW: Log live location data if available
+    if (live_distance && live_location && assignmentId) {
+      try {
+        await query(`
+          INSERT INTO assignment_live_metrics 
+          (assignment_id, volunteer_id, live_distance, live_lat, live_lng, accepted_at) 
+          VALUES (?, ?, ?, ?, ?, NOW())
+        `, [assignmentId, volunteerId, live_distance, live_location.lat, live_location.lng]);
+        
+        console.log(`📍 Live location logged: ${live_distance} km from (${live_location.lat}, ${live_location.lng})`);
+      } catch (metricsError) {
+        console.error("⚠️ Live metrics logging failed (non-critical):", metricsError);
+      }
+    }
+    
+    // Log accepted distance if available (fallback)
+    if (accepted_distance && assignmentId) {
+      try {
+        await query(`
+          INSERT INTO assignment_metrics 
+          (assignment_id, volunteer_id, accepted_distance, accepted_at) 
+          VALUES (?, ?, ?, NOW())
+        `, [assignmentId, volunteerId, accepted_distance]);
+        
+        console.log(`📏 Accepted distance logged: ${accepted_distance} km`);
+      } catch (metricsError) {
+        console.error("⚠️ Distance metrics logging failed (non-critical):", metricsError);
+      }
+    }
+    
     console.log("✅ Donation accepted successfully");
-    res.json({ success: true, message: "Donation accepted successfully" });
+    res.json({ 
+      success: true, 
+      message: "Donation accepted successfully",
+      live_distance: live_distance,
+      accepted_distance: accepted_distance
+    });
   } catch (err) {
     console.error("❌ Accept error:", err);
     res.json({ success: false, message: "Failed to accept donation" });

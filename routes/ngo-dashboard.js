@@ -362,7 +362,7 @@ router.post("/api/ngo/approve-donation/:id", ensureNGOAuthenticated, async (req,
     
     // Update donation status
     const updateResult = await connection.execute(
-      "UPDATE donations SET ngo_id = ?, ngo_approval_status = 'approved', status = 'assigned', assigned_at = NOW() WHERE id = ?",
+      "UPDATE donations SET ngo_id = ?, ngo_approval_status = 'approved', status = 'assigned', volunteer_id = NULL, assigned_at = NOW() WHERE id = ?",
       [ngoId, donationId]
     );
     

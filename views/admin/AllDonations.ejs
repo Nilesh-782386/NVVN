@@ -476,10 +476,25 @@
               <option value="cancelled" <%= filterStatus === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
             </select>
             <select class="filter-input" id="cityFilter" name="city">
-              <option value="" <%= filterCity === '' ? 'selected' : '' %>>All Cities</option>
-              <option value="mumbai" <%= filterCity === 'mumbai' ? 'selected' : '' %>>Mumbai</option>
-              <option value="pune" <%= filterCity === 'pune' ? 'selected' : '' %>>Pune</option>
+              <option value="" <%= filterCity === '' ? 'selected' : '' %>>All Districts</option>
+              <!-- Existing Districts -->
               <option value="nagpur" <%= filterCity === 'nagpur' ? 'selected' : '' %>>Nagpur</option>
+              <option value="pune" <%= filterCity === 'pune' ? 'selected' : '' %>>Pune</option>
+              <option value="mumbai" <%= filterCity === 'mumbai' ? 'selected' : '' %>>Mumbai</option>
+              <option value="thane" <%= filterCity === 'thane' ? 'selected' : '' %>>Thane</option>
+              <option value="nashik" <%= filterCity === 'nashik' ? 'selected' : '' %>>Nashik</option>
+              
+              <!-- NEW DISTRICTS ADDED -->
+              <option value="nagar" <%= filterCity === 'nagar' ? 'selected' : '' %>>Ahmednagar</option>
+              <option value="aurangabad" <%= filterCity === 'aurangabad' ? 'selected' : '' %>>Aurangabad</option>
+              <option value="solapur" <%= filterCity === 'solapur' ? 'selected' : '' %>>Solapur</option>
+              <option value="kolhapur" <%= filterCity === 'kolhapur' ? 'selected' : '' %>>Kolhapur</option>
+              <option value="amravati" <%= filterCity === 'amravati' ? 'selected' : '' %>>Amravati</option>
+              <option value="latur" <%= filterCity === 'latur' ? 'selected' : '' %>>Latur</option>
+              <option value="akola" <%= filterCity === 'akola' ? 'selected' : '' %>>Akola</option>
+              <option value="jalgaon" <%= filterCity === 'jalgaon' ? 'selected' : '' %>>Jalgaon</option>
+              <option value="satara" <%= filterCity === 'satara' ? 'selected' : '' %>>Satara</option>
+              <option value="sangli" <%= filterCity === 'sangli' ? 'selected' : '' %>>Sangli</option>
             </select>
             <button type="submit" class="btn btn-primary">Search</button>
           </div>

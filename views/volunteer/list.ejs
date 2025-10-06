@@ -151,14 +151,24 @@
                     </select>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label class="form-label">City Filter</label>
+                    <label class="form-label">District Filter</label>
                     <select class="form-select" id="cityFilter">
-                        <option value="">All Cities</option>
-                        <option value="Mumbai">Mumbai</option>
-                        <option value="Delhi">Delhi</option>
-                        <option value="Bangalore">Bangalore</option>
-                        <option value="Pune">Pune</option>
-                        <option value="Chennai">Chennai</option>
+                        <option value="">All Districts</option>
+                        <option value="mumbai">Mumbai</option>
+                        <option value="pune">Pune</option>
+                        <option value="nagpur">Nagpur</option>
+                        <option value="thane">Thane</option>
+                        <option value="nashik">Nashik</option>
+                        <option value="nagar">Ahmednagar</option>
+                        <option value="aurangabad">Aurangabad</option>
+                        <option value="solapur">Solapur</option>
+                        <option value="kolhapur">Kolhapur</option>
+                        <option value="amravati">Amravati</option>
+                        <option value="latur">Latur</option>
+                        <option value="akola">Akola</option>
+                        <option value="jalgaon">Jalgaon</option>
+                        <option value="satara">Satara</option>
+                        <option value="sangli">Sangli</option>
                     </select>
                 </div>
                 <div class="col-md-2 mb-3 d-flex align-items-end">
@@ -258,22 +268,22 @@
         function applyFilters() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilter').value;
-            const cityFilter = document.getElementById('cityFilter').value;
+            const districtFilter = document.getElementById('cityFilter').value;
 
             filteredVolunteers = allVolunteers.filter(volunteer => {
                 // Search filter
                 const matchesSearch = !searchTerm || 
                     volunteer.name.toLowerCase().includes(searchTerm) ||
                     volunteer.email.toLowerCase().includes(searchTerm) ||
-                    volunteer.city.toLowerCase().includes(searchTerm);
+                    volunteer.district.toLowerCase().includes(searchTerm);
 
                 // Status filter
                 const matchesStatus = !statusFilter || volunteer.status === statusFilter;
 
-                // City filter
-                const matchesCity = !cityFilter || volunteer.city === cityFilter;
+                // District filter
+                const matchesDistrict = !districtFilter || volunteer.district === districtFilter;
 
-                return matchesSearch && matchesStatus && matchesCity;
+                return matchesSearch && matchesStatus && matchesDistrict;
             });
 
             updateVolunteerCount();

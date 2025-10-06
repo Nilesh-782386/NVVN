@@ -120,7 +120,7 @@ router.get("/volunteer-dashboard", ensureVolunteerAuthenticated, async (req, res
       [volunteerId]
     );
     
-    const volunteerDistrict = volunteerResult && volunteerResult[0] ? volunteerResult[0].district : null;
+    const volunteerDistrict = volunteerResult && volunteerResult.length > 0 ? volunteerResult[0].district : null;
     console.log("🔍 VOLUNTEER DASHBOARD - Volunteer District:", volunteerDistrict);
     
     // Get assigned donations in the volunteer's district (case insensitive) with coordinates
@@ -141,7 +141,7 @@ router.get("/volunteer-dashboard", ensureVolunteerAuthenticated, async (req, res
     `, [volunteerDistrict]);
 
     console.log("🔍 VOLUNTEER DASHBOARD - Available donations count:", availableResult?.length || 0);
-    console.log("🔍 VOLUNTEER DASHBOARD - Available donations:", availableResult);
+    console.log("🔍 VOLUNTEER DASHBOARD - Available donations:", availableResult || []);
 
     // Your assignments
     const myDonationsResult = await query(`

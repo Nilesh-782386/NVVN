@@ -689,7 +689,221 @@
     <script src="/js/enhanced-notifications.js"></script>
     <script src="/js/dashboard-animations.js"></script>
     <script src="/js/distance-calculator.js"></script>
+    <script src="/js/live-volunteer-location.js"></script>
     <script src="/js/volunteer-dashboard.js"></script>
+    
+    <script>
+    // Initialize live location and calculate distances
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🚀 Initializing live volunteer location...');
+        
+        try {
+            // Initialize live location service
+            const liveLocation = await window.volunteerLocationService.init();
+            
+            if (liveLocation) {
+                console.log('✅ Live location initialized:', liveLocation);
+                // Update all donation cards with live distance
+                updateAllDonationDistances();
+            } else {
+                console.log('⚠️ Using static district coordinates as fallback');
+                // Fallback to existing distance calculation
+                if (typeof calculateAllDistances === 'function') {
+                    calculateAllDistances();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Failed to initialize live location:', error);
+            // Fallback to existing distance calculation
+            if (typeof calculateAllDistances === 'function') {
+                calculateAllDistances();
+            }
+        }
+    });
+
+    function updateAllDonationDistances() {
+        console.log('🔄 Updating all donation distances with live location...');
+        
+        document.querySelectorAll('.donation-request-card').forEach(card => {
+            const donationId = card.dataset.donationId;
+            const donationLat = parseFloat(card.dataset.lat);
+            const donationLng = parseFloat(card.dataset.lng);
+            
+            if (donationLat && donationLng && donationLat !== 0 && donationLng !== 0) {
+                const distance = window.volunteerLocationService.calculateDistanceTo(donationLat, donationLng);
+                
+                if (distance !== null) {
+                    const distanceElement = document.getElementById(`distance-${donationId}`);
+                    if (distanceElement) {
+                        distanceElement.innerHTML = `
+                            <div class="live-distance-info">
+                                <span class="distance-number">${distance.toFixed(1)} KM</span>
+                                <small class="text-success">📍 From your current location</small>
+                            </div>
+                        `;
+                        
+                        // Color code based on distance
+                        if (distance > 20) {
+                            distanceElement.classList.add('distance-far');
+                        } else if (distance > 10) {
+                            distanceElement.classList.add('distance-medium');
+                        } else {
+                            distanceElement.classList.add('distance-near');
+                        }
+                    }
+                } else {
+                    const distanceElement = document.getElementById(`distance-${donationId}`);
+                    if (distanceElement) {
+                        distanceElement.innerHTML = `
+                            <div class="text-muted">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Distance unavailable
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                const distanceElement = document.getElementById(`distance-${donationId}`);
+                if (distanceElement) {
+                    distanceElement.innerHTML = `
+                        <div class="text-muted">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Location not available
+                        </div>
+                    `;
+                }
+            }
+        });
+    }
+
+    // Enhanced acceptance function with live distance
+    async function acceptDonationWithDistance(donationId) {
+        console.log(`🎯 Accepting donation ${donationId} with live distance...`);
+        
+        try {
+            // Get live location first
+            const liveLocation = await window.volunteerLocationService.getLiveLocation();
+            const donationCard = document.querySelector(`[data-donation-id="${donationId}"]`);
+            const donationLat = parseFloat(donationCard.dataset.lat);
+            const donationLng = parseFloat(donationCard.dataset.lng);
+            
+            // Calculate live distance
+            const liveDistance = window.volunteerLocationService.calculateDistanceTo(donationLat, donationLng);
+            
+            // Show confirmation with LIVE distance
+            if (liveDistance !== null) {
+                const confirmMessage = `✅ Accept this donation?\n\n📍 Live Distance: ${liveDistance.toFixed(1)} km from your current location`;
+                if (confirm(confirmMessage)) {
+                    proceedWithAcceptance(donationId, liveDistance);
+                }
+            } else {
+                // Show confirmation without distance
+                if (confirm('✅ Accept this donation?')) {
+                    proceedWithAcceptance(donationId, null);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Failed to get live location:', error);
+            // Fallback to static distance
+            if (confirm('✅ Accept this donation?')) {
+                proceedWithAcceptance(donationId, null);
+            }
+        }
+    }
+
+    function proceedWithAcceptance(donationId, liveDistance) {
+        console.log(`📝 Proceeding with acceptance for donation ${donationId}, distance: ${liveDistance} km`);
+        
+        // Show loading state
+        const acceptButton = document.querySelector(`[data-distance-id="${donationId}"]`);
+        if (acceptButton) {
+            acceptButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accepting...';
+            acceptButton.disabled = true;
+        }
+        
+        // Prepare request data
+        const requestData = {
+            live_distance: liveDistance,
+            live_location: window.volunteerLocationService.currentLocation
+        };
+        
+        // Make API call
+        fetch(`/api/assignments/${donationId}/accept`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess(`Donation accepted successfully! ${liveDistance ? `Distance: ${liveDistance.toFixed(1)} km` : ''}`);
+                // Refresh the page or update UI
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showError('Acceptance failed: ' + (data.error || 'Unknown error'));
+                // Reset button
+                if (acceptButton) {
+                    acceptButton.innerHTML = '<i class="fas fa-check"></i> Accept';
+                    acceptButton.disabled = false;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Acceptance error:', error);
+            showError('Failed to accept donation. Please try again.');
+            // Reset button
+            if (acceptButton) {
+                acceptButton.innerHTML = '<i class="fas fa-check"></i> Accept';
+                acceptButton.disabled = false;
+            }
+        });
+    }
+
+    // Notification functions
+    function showSuccess(message) {
+        // Create success notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas fa-check-circle"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 5000);
+    }
+
+    function showError(message) {
+        // Create error notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        // Auto remove after 7 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 7000);
+    }
+    </script>
 </body>
 </html>
 

@@ -62,6 +62,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Auto-enable location features for new registrations (temporarily disabled)
+// app.use(autoEnableLocationFeatures);
+
 // Use routes - Admin routes FIRST to avoid conflicts
 console.log("🔍 Registering admin routes...");
 app.use('/admin', adminRoutes);
@@ -97,8 +100,13 @@ app.use(pickupTrackingRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send("Something broke!");
+  console.error('🚨 GLOBAL ERROR HANDLER TRIGGERED:');
+  console.error('Error message:', err.message);
+  console.error('Error stack:', err.stack);
+  console.error('Request URL:', req.url);
+  console.error('Request method:', req.method);
+  console.error('Session data:', req.session);
+  res.status(500).send(`Something broke! Error: ${err.message}`);
 });
 
 async function ensureSchema() {

@@ -225,7 +225,7 @@ router.post("/ngo-register", upload.single("file"), async (req, res) => {
       addline,
       land,
       city,
-      city.toLowerCase(), // Set district same as city (lowercase)
+      city.toLowerCase(), // Store district (lowercase)
       state,
       pincode,
       optnote,
