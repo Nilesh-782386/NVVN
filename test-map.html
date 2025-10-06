@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map Test</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <div id="liveMap" style="height: 400px; width: 100%;"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        console.log('Starting map test...');
+        
+        // Test if Leaflet is loaded
+        if (typeof L === 'undefined') {
+            console.error('Leaflet not loaded!');
+        } else {
+            console.log('Leaflet loaded successfully');
+            
+            // Test map creation
+            try {
+                const map = L.map('liveMap').setView([18.5204, 73.8567], 13);
+                console.log('Map created successfully');
+                
+                // Add tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                
+                console.log('Tiles added successfully');
+                
+                // Add test marker
+                L.marker([18.5204, 73.8567])
+                    .addTo(map)
+                    .bindPopup('Test Location')
+                    .openPopup();
+                
+                console.log('Marker added successfully');
+                
+            } catch (error) {
+                console.error('Map creation error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

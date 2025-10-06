@@ -15,6 +15,12 @@ import dbMigrationRoutes from "./routes/db-migration.js";
 import ngoDashboardRoutes from "./routes/ngo-dashboard.js";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
+import trustScoreRoutes from "./routes/trustScore.js";
+import autoUnassignService from "./services/autoUnassignService.js";
+import liveTrackingRoutes from "./routes/live-tracking.js";
+import availabilityApiRoutes from "./routes/availability-api.js";
+import distanceApiRoutes from "./routes/distance-api.js";
+import pickupTrackingRoutes from "./routes/pickup-tracking.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = 5000;
@@ -74,6 +80,21 @@ app.use(ngoDashboardRoutes);
 // Use chatbot routes
 app.use(chatbotRoutes);
 
+// Use trust score routes (ADD-ON)
+app.use(trustScoreRoutes);
+
+// Use live tracking routes (ADD-ON)
+app.use(liveTrackingRoutes);
+
+// Use availability API routes (ADD-ON)
+app.use(availabilityApiRoutes);
+
+// Use distance API routes (ADD-ON)
+app.use(distanceApiRoutes);
+
+// Use pickup tracking routes (ADD-ON)
+app.use(pickupTrackingRoutes);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -97,6 +118,9 @@ async function startServer() {
     console.log("✅ Connected to the database");
     
     await ensureSchema();
+    
+    // Start auto-unassign service (ADD-ON)
+    autoUnassignService.start();
     
     // Start the server on 0.0.0.0 for Replit environment
     const server = app.listen(port, "0.0.0.0", () => {

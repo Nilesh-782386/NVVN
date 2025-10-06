@@ -1,0 +1,126 @@
+/* Distance display styles */
+.distance-info {
+    background: #e7f3ff;
+    border: 1px solid #b6d7ff;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+.distance-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.distance-value {
+    font-size: 1.2rem;
+    margin-top: 5px;
+}
+
+.distance-number {
+    font-weight: bold;
+    font-size: 1.4rem;
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Color coding for distances */
+.distance-near .distance-number {
+    color: #28a745; /* Green for close distances */
+}
+
+.distance-medium .distance-number {
+    color: #ffc107; /* Yellow for medium distances */
+}
+
+.distance-far .distance-number {
+    color: #dc3545; /* Red for far distances */
+}
+
+/* Spinner styling */
+.distance-info .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Distance warning styles */
+.distance-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.distance-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* Enhanced donation card with distance */
+.donation-request-card {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.donation-request-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.distance-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #007bff;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.distance-badge.near {
+    background: #28a745;
+}
+
+.distance-badge.medium {
+    background: #ffc107;
+    color: #000;
+}
+
+.distance-badge.far {
+    background: #dc3545;
+}
+
+/* Loading state */
+.distance-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.distance-loading .spinner-border-sm {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .distance-info {
+        padding: 8px;
+        margin: 8px 0;
+    }
+    
+    .distance-number {
+        font-size: 1.2rem;
+    }
+    
+    .distance-badge {
+        position: static;
+        display: inline-block;
+        margin-top: 8px;
+    }
+}

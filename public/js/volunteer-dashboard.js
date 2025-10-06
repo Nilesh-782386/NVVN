@@ -1,6 +1,6 @@
 // Volunteer Dashboard JavaScript
 
-// Accept a donation request
+// Accept a donation request (legacy function)
 function acceptRequest(donationId) {
     if (confirm('Are you sure you want to accept this donation request?')) {
         fetch(`/accept-donation/${donationId}`, {
@@ -24,6 +24,60 @@ function acceptRequest(donationId) {
             console.error('Error:', error);
             showNotification('Error accepting donation request', 'error');
         });
+    }
+}
+
+// Enhanced accept function with distance logging
+async function acceptDonationWithDistance(donationId) {
+    const acceptButton = document.querySelector(`[data-distance-id="${donationId}"]`);
+    const distance = acceptButton ? acceptButton.getAttribute('data-distance') : null;
+    
+    console.log(`✅ Accepting donation ${donationId} with distance: ${distance} km`);
+    
+    // Create a more detailed confirmation message
+    let confirmMessage = `Are you sure you want to accept this donation request?`;
+    if (distance) {
+        confirmMessage += `\n\n📏 Distance: ${distance} km from your current location`;
+        if (parseFloat(distance) > 15) {
+            confirmMessage += `\n⚠️ This is a long distance. Are you sure you want to proceed?`;
+        }
+    } else {
+        confirmMessage += `\n\n⚠️ Distance information not available.`;
+    }
+    
+    if (confirm(confirmMessage)) {
+        try {
+            const response = await fetch(`/accept-donation/${donationId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    accepted_distance: distance ? parseFloat(distance) : null
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success message with distance
+                const message = distance ? 
+                    `Donation accepted! Distance: ${distance} km` : 
+                    'Donation accepted!';
+                
+                showNotification(message, 'success');
+                
+                // Reload the page to update the dashboard
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showNotification(result.error || 'Failed to accept donation', 'error');
+            }
+        } catch (error) {
+            console.error('Error accepting donation:', error);
+            showNotification('Error accepting donation. Please try again.', 'error');
+        }
     }
 }
 

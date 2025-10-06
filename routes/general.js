@@ -123,7 +123,7 @@ router.get("/volunteer-dashboard", ensureVolunteerAuthenticated, async (req, res
     const volunteerDistrict = volunteerResult && volunteerResult[0] ? volunteerResult[0].district : null;
     console.log("🔍 VOLUNTEER DASHBOARD - Volunteer District:", volunteerDistrict);
     
-    // Get assigned donations in the volunteer's district (case insensitive)
+    // Get assigned donations in the volunteer's district (case insensitive) with coordinates
     const availableResult = await query(`
       SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
       FROM donations d 

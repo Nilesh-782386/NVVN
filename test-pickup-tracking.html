@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pickup Tracking</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #liveMap { height: 400px; width: 100%; border: 1px solid #ccc; }
+        .info { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>Test Pickup Tracking</h1>
+    
+    <div class="info">
+        <h3>Testing API Call</h3>
+        <button onclick="testAPI()">Test API Call</button>
+        <div id="apiResult"></div>
+    </div>
+    
+    <div class="info">
+        <h3>Testing Map</h3>
+        <button onclick="testMap()">Test Map Creation</button>
+        <div id="mapResult"></div>
+    </div>
+    
+    <div id="liveMap"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let testMap = null;
+        
+        async function testAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = 'Testing API...';
+            
+            try {
+                const response = await fetch('/api/pickup-tracking/2');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = '<div class="success">API Success: ' + JSON.stringify(data, null, 2) + '</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="error">API Error: ' + JSON.stringify(data, null, 2) + '</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">API Exception: ' + error.message + '</div>';
+            }
+        }
+        
+        function testMap() {
+            const resultDiv = document.getElementById('mapResult');
+            resultDiv.innerHTML = 'Testing map...';
+            
+            try {
+                if (typeof L === 'undefined') {
+                    throw new Error('Leaflet not loaded');
+                }
+                
+                // Clear existing map
+                if (testMap) {
+                    testMap.remove();
+                }
+                
+                // Create new map
+                testMap = L.map('liveMap').setView([18.5204, 73.8567], 13);
+                
+                // Add tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(testMap);
+                
+                // Add test markers
+                L.marker([18.5204, 73.8567])
+                    .addTo(testMap)
+                    .bindPopup('Test Location 1')
+                    .openPopup();
+                
+                L.marker([18.5304, 73.8667])
+                    .addTo(testMap)
+                    .bindPopup('Test Location 2');
+                
+                resultDiv.innerHTML = '<div class="success">Map created successfully!</div>';
+                
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">Map Error: ' + error.message + '</div>';
+            }
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            testMap();
+        };
+    </script>
+</body>
+</html>

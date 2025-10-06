@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { ensureVolunteerAuthenticated } from "../middleware/auth.js";
+import trustScoreService from "../services/trustScoreService.js";
 
 const router = express.Router();
 
@@ -133,7 +134,7 @@ router.get("/volunteer-dashboard-data", ensureVolunteerAuthenticated, async (req
     
     const volunteerDistrict = volunteerResult && volunteerResult[0] ? volunteerResult[0].district : null;
     
-    // Get assigned donations in the volunteer's district (case insensitive)
+    // Get assigned donations in the volunteer's district (case insensitive) with coordinates
     const availableResult = await query(`
       SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
       FROM donations d 
@@ -264,6 +265,25 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
       return res.json({ success: false, message: "Donation is no longer available" });
     }
     
+    // NEW: Create assignment record for monitoring (ADD-ON)
+    try {
+      const assignmentResult = await query(`
+        INSERT INTO volunteer_assignments (donation_id, volunteer_id, status, accepted_at)
+        VALUES (?, ?, 'accepted', NOW())
+      `, [donationId, volunteerId]);
+      
+      const assignmentId = assignmentResult.insertId;
+      
+      // Update donation with assignment reference
+      await query(`
+        UPDATE donations SET assignment_id = ? WHERE id = ?
+      `, [assignmentId, donationId]);
+      
+      console.log("✅ Assignment record created:", assignmentId);
+    } catch (assignmentError) {
+      console.error("⚠️ Assignment record creation failed (non-critical):", assignmentError);
+    }
+    
     console.log("✅ Donation accepted successfully");
     res.json({ success: true, message: "Donation accepted successfully" });
   } catch (err) {
@@ -362,6 +382,22 @@ router.post("/volunteer/deliver/:id", ensureVolunteerAuthenticated, async (req, 
       "UPDATE volunteers SET completed_donations = COALESCE(completed_donations, 0) + 1 WHERE id = ?",
       [volunteerId]
     );
+
+    // NEW: Update trust score positively (ADD-ON)
+    try {
+      await trustScoreService.updateTrustScore(volunteerId, 'completed_delivery', +10);
+      
+      // Update assignment status
+      await query(`
+        UPDATE volunteer_assignments 
+        SET status = 'completed', completed_at = NOW() 
+        WHERE donation_id = ? AND volunteer_id = ?
+      `, [donationId, volunteerId]);
+      
+      console.log("✅ Trust score updated for completed delivery");
+    } catch (trustScoreError) {
+      console.error("⚠️ Trust score update failed (non-critical):", trustScoreError);
+    }
 
     res.json({ success: true, message: "Donation marked as delivered" });
   } catch (err) {

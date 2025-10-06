@@ -65,4 +65,43 @@ router.get("/volunteer-logout", (req, res) => {
   res.redirect("/");
 });
 
+// API: Get volunteer's saved location
+router.get("/api/volunteer/my-location", async (req, res) => {
+  try {
+    if (!req.session.volunteer) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Not authenticated' 
+      });
+    }
+    
+    const volunteerId = req.session.volunteer.id;
+    const result = await query(
+      'SELECT latitude, longitude FROM volunteers WHERE id = ?',
+      [volunteerId]
+    );
+    
+    if (result && result.length > 0) {
+      res.json({
+        success: true,
+        location: {
+          lat: result[0].latitude || 0,
+          lng: result[0].longitude || 0
+        }
+      });
+    } else {
+      res.json({
+        success: true,
+        location: { lat: 0, lng: 0 }
+      });
+    }
+  } catch (error) {
+    console.error("Get volunteer location error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get location' 
+    });
+  }
+});
+
 export default router;

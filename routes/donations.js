@@ -283,8 +283,8 @@ router.get("/api/donations/history", ensureUserAuthenticated, async (req, res) =
   }
 });
 
-// API: Get specific donation details
-router.get("/api/donations/:id", ensureUserAuthenticated, async (req, res) => {
+// Web page: Donation details
+router.get("/donation/details/:id", ensureUserAuthenticated, async (req, res) => {
   try {
     const donationId = req.params.id;
     const userId = req.session.user.id;
@@ -300,21 +300,55 @@ router.get("/api/donations/:id", ensureUserAuthenticated, async (req, res) => {
     `, [donationId, userId]);
     
     if (result && result.length > 0) {
-      res.json({ 
-        success: true, 
-        donation: result[0] 
+      res.render('donation-details', { 
+        donation: result[0],
+        title: 'Donation Details'
       });
     } else {
-      res.status(404).json({ 
-        success: false, 
-        message: "Donation not found" 
+      res.status(404).render('error', { 
+        message: 'Donation not found or you do not have permission to view this donation.',
+        title: 'Donation Not Found'
       });
     }
   } catch (error) {
-    console.error("Donation details error:", error);
+    console.error("Error fetching donation details:", error);
+    res.status(500).render('error', { 
+      message: 'Failed to load donation details. Please try again later.',
+      title: 'Server Error'
+    });
+  }
+});
+
+// API: Get specific donation details
+// API: Get donation coordinates for distance calculation
+router.get("/api/donations/:id/coordinates", async (req, res) => {
+  try {
+    const donationId = req.params.id;
+    
+    const result = await query(
+      'SELECT latitude, longitude FROM donations WHERE id = ?',
+      [donationId]
+    );
+    
+    if (result && result.length > 0) {
+      res.json({
+        success: true,
+        coordinates: {
+          lat: result[0].latitude,
+          lng: result[0].longitude
+        }
+      });
+    } else {
+      res.status(404).json({ 
+        success: false,
+        error: 'Donation not found' 
+      });
+    }
+  } catch (error) {
+    console.error("Get coordinates error:", error);
     res.status(500).json({ 
-      success: false, 
-      message: "Failed to load donation details" 
+      success: false,
+      error: 'Failed to get coordinates' 
     });
   }
 });

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/distance-display.css">
     <style>
         /* Availability Management Styles */
         .availability-display {
@@ -229,6 +230,9 @@
                                             <button class="btn btn-warning btn-xs" onclick="markPickedUp(<%= donation.id %>)">
                                                 <i class="fas fa-truck"></i> Pick Up
                                             </button>
+                                            <a href="/volunteer/live-map/<%= donation.assignment_id || donation.id %>" class="btn btn-info btn-xs">
+                                                <i class="fas fa-map-marked-alt"></i> Live Map
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -302,7 +306,10 @@
                 <div class="requests-grid">
                     <% if (availableDonations && availableDonations.length > 0) { %>
                         <% availableDonations.forEach(donation => { %>
-                        <div class="donation-request-card grid-item">
+                        <div class="donation-request-card grid-item" 
+                             data-donation-id="<%= donation.id %>"
+                             data-lat="<%= donation.latitude || 0 %>"
+                             data-lng="<%= donation.longitude || 0 %>">
                             <div class="card-header">
                                 <h5>Request #<%= donation.id %></h5>
                                 <span class="badge bg-warning">Pending</span>
@@ -312,6 +319,22 @@
                                 <p class="text-muted mb-2">
                                     <i class="fas fa-map-marker-alt"></i> <%= donation.city %>, <%= donation.state %>
                                 </p>
+                                
+                                <!-- DISTANCE DISPLAY -->
+                                <div class="distance-info alert alert-info">
+                                    <div class="distance-content">
+                                        <strong>📏 Exact Distance From You:</strong>
+                                        <div class="distance-value" id="distance-<%= donation.id %>">
+                                            <div class="distance-loading">
+                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                    <span class="visually-hidden">Calculating...</span>
+                                                </div>
+                                                Calculating distance...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="donation-items mb-3">
                                     <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
                                     <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
@@ -327,7 +350,9 @@
                                 </p>
                                 <% } %>
                                 <div class="card-actions">
-                                    <button class="btn btn-success btn-sm" onclick="acceptRequest(<%= donation.id %>)">
+                                    <button class="btn btn-success btn-sm btn-accept" 
+                                            data-distance-id="<%= donation.id %>"
+                                            onclick="acceptDonationWithDistance(<%= donation.id %>)">
                                         <i class="fas fa-check"></i> Accept
                                     </button>
                                     <button class="btn btn-outline-info btn-sm" onclick="viewRequestDetails(<%= donation.id %>)">
@@ -436,6 +461,16 @@
                                         <button class="btn btn-sm btn-success" onclick="markDelivered(<%= donation.id %>)">
                                             <i class="fas fa-check"></i> Delivered
                                         </button>
+                                        <a href="/volunteer/pickup-tracking/<%= donation.id %>" class="btn btn-sm btn-info">
+                                            <i class="fas fa-map-marked-alt"></i> Live Tracking
+                                        </a>
+                                        <% } else if (donation.status === 'in_transit') { %>
+                                        <button class="btn btn-sm btn-success" onclick="markDelivered(<%= donation.id %>)">
+                                            <i class="fas fa-check"></i> Delivered
+                                        </button>
+                                        <a href="/volunteer/pickup-tracking/<%= donation.id %>" class="btn btn-sm btn-info">
+                                            <i class="fas fa-map-marked-alt"></i> Live Tracking
+                                        </a>
                                         <% } %>
                                         <button class="btn btn-sm btn-outline-info" onclick="viewRequestDetails(<%= donation.id %>)">
                                             <i class="fas fa-eye"></i> Details
@@ -653,6 +688,7 @@
     <script src="/js/sidebar.js"></script>
     <script src="/js/enhanced-notifications.js"></script>
     <script src="/js/dashboard-animations.js"></script>
+    <script src="/js/distance-calculator.js"></script>
     <script src="/js/volunteer-dashboard.js"></script>
 </body>
 </html>

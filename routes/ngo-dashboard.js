@@ -49,10 +49,11 @@ router.get("/ngo-dashboard", ensureNGOAuthenticated, async (req, res) => {
 
     // Get donations assigned to this NGO
     const assignedDonationsResult = await query(`
-      SELECT d.*, u.fullname as donor_name, v.fullname as volunteer_name, v.phone as volunteer_phone
+      SELECT d.*, u.fullname as donor_name, v.fullname as volunteer_name, v.phone as volunteer_phone, va.id as assignment_id
       FROM donations d
       LEFT JOIN users u ON d.user_id = u.id
       LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      LEFT JOIN volunteer_assignments va ON d.id = va.donation_id AND va.status = 'accepted'
       WHERE d.ngo_id = ? AND d.ngo_approval_status = 'approved'
       ORDER BY 
         CASE 

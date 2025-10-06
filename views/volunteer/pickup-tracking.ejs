@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Pickup Tracking - Donation #<%= donationId %></title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #3b82f6;
+            --dark-color: #1f2937;
+            --light-gray: #f8fafc;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * { font-family: 'Inter', sans-serif; }
+        body { background: var(--light-gray); margin: 0; padding: 0; }
+        .main-container { min-height: 100vh; background: var(--light-gray); }
+        .header-section { background: var(--primary-gradient); color: white; padding: 2rem 0; position: relative; overflow: hidden; }
+        .header-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
+        .header-content { position: relative; z-index: 2; }
+        .page-title { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .page-subtitle { font-size: 1.1rem; opacity: 0.9; margin-bottom: 0; }
+        .back-btn { position: absolute; top: 1rem; left: 1rem; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; }
+        .back-btn:hover { background: rgba(255,255,255,0.3); color: white; transform: translateY(-2px); }
+        .content-section { padding: 2rem 0; }
+        .info-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow); margin-bottom: 1.5rem; overflow: hidden; }
+        .card-header { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 1.5rem; border-bottom: 1px solid #e2e8f0; }
+        .card-title { font-size: 1.25rem; font-weight: 600; margin: 0; color: var(--dark-color); }
+        .card-body { padding: 1.5rem; }
+        .info-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9; }
+        .info-item:last-child { border-bottom: none; }
+        .info-label { font-weight: 600; color: #64748b; }
+        .info-value { color: var(--dark-color); font-weight: 500; }
+        .tracking-controls { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow); padding: 2rem; text-align: center; }
+        .status-display { display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
+        .status-indicator { width: 12px; height: 12px; border-radius: 50%; margin-right: 0.75rem; animation: pulse 2s infinite; }
+        .status-active { background-color: var(--success-color); }
+        .status-inactive { background-color: #94a3b8; animation: none; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .status-text { font-weight: 600; color: var(--dark-color); }
+        .btn-tracking { padding: 12px 30px; font-size: 1rem; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; transition: all 0.3s ease; margin: 0.5rem; }
+        .btn-start { background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%); color: white; }
+        .btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3); }
+        .btn-stop { background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%); color: white; }
+        .btn-stop:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(239, 68, 68, 0.3); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+        .map-container { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 2rem; }
+        .map-header { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 1.5rem; border-bottom: 1px solid #e2e8f0; }
+        .map-legend { display: flex; justify-content: center; gap: 2rem; padding: 1rem; background: #f8fafc; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #64748b; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .legend-donor { background-color: var(--info-color); }
+        .legend-ngo { background-color: #8b5cf6; }
+        .legend-volunteer { background-color: var(--success-color); }
+        #liveMap { 
+            height: calc(100vh - 200px); 
+            width: 100%; 
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .map-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-container:hover #liveMap {
+            transform: scale(1.02);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .map-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .map-control-btn {
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .map-control-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .map-control-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .map-status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .map-status.tracking {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .map-status.inactive {
+            background: rgba(156, 163, 175, 0.95);
+            color: white;
+        }
+        
+        /* Custom Marker Styles */
+        .custom-marker {
+            background: transparent !important;
+            border: none !important;
+        }
+        
+        .marker-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: markerPulse 2s infinite;
+        }
+        
+        .donor-icon {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+        
+        .ngo-icon {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+        
+        .volunteer-icon {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            animation: volunteerPulse 1.5s infinite;
+        }
+        
+        @keyframes markerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes volunteerPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+            50% { transform: scale(1.2); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6); }
+        }
+        
+        /* Smooth transitions for all map elements */
+        .leaflet-marker-icon {
+            transition: all 0.3s ease;
+        }
+        
+        .leaflet-popup-content {
+            font-family: 'Inter', sans-serif;
+            border-radius: 8px;
+        }
+        
+        .leaflet-popup-tip {
+            background: white;
+        }
+        
+        /* Fullscreen mode styles */
+        .map-container:fullscreen {
+            background: #f8fafc;
+        }
+        
+        .map-container:-webkit-full-screen {
+            background: #f8fafc;
+        }
+        
+        .map-container:-moz-full-screen {
+            background: #f8fafc;
+        }
+        
+        .map-container:-ms-fullscreen {
+            background: #f8fafc;
+        }
+        .loading-spinner { display: none; text-align: center; padding: 2rem; }
+        .spinner { width: 3rem; height: 3rem; border: 0.3em solid #f3f4f6; border-top: 0.3em solid var(--info-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .alert-custom { border-radius: 8px; border: none; padding: 1rem 1.5rem; margin-bottom: 1rem; }
+        .footer-info { text-align: center; padding: 1rem; color: #64748b; font-size: 0.9rem; }
+        @media (max-width: 768px) {
+            .page-title { font-size: 2rem; }
+            .map-legend { gap: 1rem; }
+            .legend-item { font-size: 0.8rem; }
+            .btn-tracking { padding: 10px 20px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="container">
+                <a href="/volunteer-dashboard" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <div class="header-content text-center">
+                    <h1 class="page-title">
+                        <i class="fas fa-truck"></i> Live Pickup Tracking
+                    </h1>
+                    <p class="page-subtitle">Donation #<%= donationId %> - Real-time delivery tracking</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Section -->
+        <div class="content-section">
+            <div class="container">
+                <!-- Loading Spinner -->
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner"></div>
+                    <p>Loading tracking data...</p>
+                </div>
+
+                <!-- Main Content -->
+                <div id="mainContent" style="display: none;">
+                    <!-- Info Cards Row -->
+                    <div class="row mb-4">
+                        <div class="col-lg-4 mb-4">
+                            <div class="info-card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-info-circle text-primary"></i> Donation Details
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="info-item">
+                                        <span class="info-label">Donation ID</span>
+                                        <span class="info-value">#<%= donationId %></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Status</span>
+                                        <span class="info-value" id="donationStatus">Loading...</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Donor</span>
+                                        <span class="info-value" id="donorName">Loading...</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">NGO</span>
+                                        <span class="info-value" id="ngoName">Loading...</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Pickup Address</span>
+                                        <span class="info-value" id="pickupAddress">Loading...</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Delivery Address</span>
+                                        <span class="info-value" id="deliveryAddress">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-8 mb-4">
+                            <div class="tracking-controls">
+                                <div class="status-display">
+                                    <div class="status-indicator status-inactive" id="statusIndicator"></div>
+                                    <span class="status-text" id="statusText">Tracking Inactive</span>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-muted mb-3">Share your location for real-time tracking</h6>
+                                </div>
+                                
+                                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                                    <button id="startTracking" class="btn btn-tracking btn-start">
+                                        <i class="fas fa-play"></i> Start Tracking
+                                    </button>
+                                    <button id="stopTracking" class="btn btn-tracking btn-stop" disabled>
+                                        <i class="fas fa-stop"></i> Stop Tracking
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> Location updates every 30 seconds
+                                    </small>
+                                </div>
+                                
+                                <!-- Status Update Buttons -->
+                                <div class="mt-4 pt-3 border-top">
+                                    <h6 class="text-muted mb-3">Update Delivery Status</h6>
+                                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                        <button id="markInTransit" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-truck"></i> Mark In Transit
+                                        </button>
+                                        <button id="markDelivered" class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-check"></i> Mark Delivered
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Map Section -->
+                    <div class="map-container">
+                        <!-- Map Status Indicator -->
+                        <div class="map-status inactive" id="mapStatus">
+                            <i class="fas fa-circle"></i> Tracking Inactive
+                        </div>
+                        
+                        <!-- Map Overlay Controls -->
+                        <div class="map-overlay">
+                            <div class="d-flex align-items-center gap-3">
+                                <button class="map-control-btn" id="centerMapBtn" title="Center Map">
+                                    <i class="fas fa-crosshairs"></i>
+                                </button>
+                                <button class="map-control-btn" id="fullscreenBtn" title="Fullscreen">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                                <button class="map-control-btn" id="refreshMapBtn" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Map Controls -->
+                        <div class="map-controls">
+                            <button class="map-control-btn" id="showAllMarkersBtn" title="Show All Locations">
+                                <i class="fas fa-map-marker-alt"></i> All Locations
+                            </button>
+                            <button class="map-control-btn" id="showRouteBtn" title="Show Route">
+                                <i class="fas fa-route"></i> Show Route
+                            </button>
+                        </div>
+                        
+                        <!-- The Map -->
+                        <div id="liveMap"></div>
+                        
+                        <!-- Map Legend -->
+                        <div class="map-legend">
+                            <div class="legend-item">
+                                <div class="legend-dot legend-donor"></div>
+                                <span>Pickup Location</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot legend-ngo"></div>
+                                <span>Delivery Location</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot legend-volunteer"></div>
+                                <span>Your Location</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer-info">
+                    <i class="fas fa-truck"></i> Powered by OpenStreetMap & Leaflet.js
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const donationId = '<%= donationId %>';
+        let isTracking = false;
+        let currentMap = null;
+        let trackingInterval = null;
+        let volunteerMarker = null;
+        let donorMarker = null;
+        let ngoMarker = null;
+        let routeLayer = null;
+        let isFullscreen = false;
+        
+        // Show loading spinner
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+        }
+        
+        // Hide loading spinner
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+        }
+        
+        // Initialize map when page loads
+        async function initializeMap() {
+            showLoading();
+            
+            try {
+                const response = await fetch(`/api/pickup-tracking/${donationId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('Data loaded successfully:', data);
+                    
+                    // Update donation details
+                    document.getElementById('donationStatus').textContent = data.donation.status;
+                    document.getElementById('donorName').textContent = data.donation.donor_name || 'Anonymous';
+                    document.getElementById('ngoName').textContent = data.donation.ngo_name || 'Not assigned';
+                    document.getElementById('pickupAddress').textContent = data.donor.address || 'Address not available';
+                    document.getElementById('deliveryAddress').textContent = data.ngo.address || 'Address not available';
+                    
+                    // Initialize the map
+                    console.log('Initializing map with data:', data.donor, data.ngo, data.volunteer);
+                    currentMap = initLiveMap(data.donor, data.ngo, data.volunteer);
+                    hideLoading();
+                } else {
+                    console.error('API returned error:', data);
+                    hideLoading();
+                    showAlert('Failed to load tracking data: ' + (data.error || 'Unknown error'), 'danger');
+                }
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                hideLoading();
+                showAlert('Error loading tracking data. Please try again.', 'danger');
+            }
+        }
+        
+        // Initialize map with all locations
+        function initLiveMap(donorCoords, ngoCoords, volunteerCoords) {
+            try {
+                console.log('Initializing map with coordinates:', { donorCoords, ngoCoords, volunteerCoords });
+                
+                // Check if coordinates are valid
+                if (!donorCoords || !donorCoords.lat || !donorCoords.lng) {
+                    throw new Error('Invalid donor coordinates');
+                }
+                if (!ngoCoords || !ngoCoords.lat || !ngoCoords.lng) {
+                    throw new Error('Invalid NGO coordinates');
+                }
+                
+                // Calculate center point
+                const centerLat = (donorCoords.lat + ngoCoords.lat) / 2;
+                const centerLng = (donorCoords.lng + ngoCoords.lng) / 2;
+                
+                console.log('Map center:', centerLat, centerLng);
+                
+                const map = L.map('liveMap', {
+                    zoomControl: true,
+                    scrollWheelZoom: true,
+                    doubleClickZoom: true,
+                    boxZoom: true,
+                    keyboard: true,
+                    dragging: true,
+                    touchZoom: true
+                }).setView([centerLat, centerLng], 13);
+                
+                console.log('Map created successfully');
+                
+                // Add OpenStreetMap tiles with smooth loading
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19,
+                    updateWhenIdle: true,
+                    keepBuffer: 2
+                }).addTo(map);
+                console.log('Tiles added successfully');
+                
+                // Add pickup location marker with custom icon
+                donorMarker = L.marker([donorCoords.lat, donorCoords.lng], {
+                    icon: L.divIcon({
+                        className: 'custom-marker donor-marker',
+                        html: '<div class="marker-icon donor-icon"><i class="fas fa-map-marker-alt"></i></div>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30]
+                    })
+                }).addTo(map)
+                .bindPopup('<b>📍 Pickup Location</b><br>' + (donorCoords.address || 'Pickup Location'))
+                .openPopup();
+                console.log('Pickup marker added');
+                
+                // Add delivery location marker with custom icon
+                ngoMarker = L.marker([ngoCoords.lat, ngoCoords.lng], {
+                    icon: L.divIcon({
+                        className: 'custom-marker ngo-marker',
+                        html: '<div class="marker-icon ngo-icon"><i class="fas fa-building"></i></div>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30]
+                    })
+                }).addTo(map)
+                .bindPopup('<b>🏢 Delivery Location</b><br>' + (ngoCoords.address || 'Delivery Location'));
+                console.log('Delivery marker added');
+                
+                // Add volunteer location if available
+                if (volunteerCoords && volunteerCoords.lat && volunteerCoords.lng) {
+                    volunteerMarker = L.marker([volunteerCoords.lat, volunteerCoords.lng], {
+                        icon: L.divIcon({
+                            className: 'custom-marker volunteer-marker',
+                            html: '<div class="marker-icon volunteer-icon"><i class="fas fa-walking"></i></div>',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 30]
+                        })
+                    }).addTo(map)
+                    .bindPopup('<b>🚶 Your Current Location</b><br>Last updated: ' + new Date(volunteerCoords.last_updated).toLocaleTimeString());
+                    console.log('Volunteer marker added');
+                }
+                
+                // Add smooth animations
+                map.on('zoomend', function() {
+                    console.log('Map zoom level:', map.getZoom());
+                });
+                
+                map.on('moveend', function() {
+                    console.log('Map center:', map.getCenter());
+                });
+                
+                console.log('Map initialization completed successfully');
+                return map;
+                
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                showAlert('Error initializing map: ' + error.message, 'danger');
+                return null;
+            }
+        }
+        
+        // Start live tracking
+        function startLiveTracking() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser');
+                return;
+            }
+            
+            isTracking = true;
+            updateStatus(true);
+            
+            // Update location every 30 seconds
+            trackingInterval = setInterval(() => {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        try {
+                            await fetch('/api/pickup-tracking/location', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    donation_id: donationId,
+                                    lat: lat,
+                                    lng: lng
+                                })
+                            });
+                            
+                            // Update map with volunteer location
+                            updateVolunteerMarker(lat, lng);
+                        } catch (error) {
+                            console.error('Failed to send location:', error);
+                        }
+                    },
+                    (error) => {
+                        console.error('Geolocation error:', error);
+                        showAlert('Location access denied. Please enable location services.', 'warning');
+                    },
+                    { enableHighAccuracy: true }
+                );
+            }, 30000);
+            
+            // Do immediate first update
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                try {
+                    await fetch('/api/pickup-tracking/location', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            donation_id: donationId,
+                            lat: lat,
+                            lng: lng
+                        })
+                    });
+                    
+                    updateVolunteerMarker(lat, lng);
+                } catch (error) {
+                    console.error('Failed to send initial location:', error);
+                }
+            });
+        }
+        
+        // Stop live tracking
+        function stopLiveTracking() {
+            isTracking = false;
+            updateStatus(false);
+            
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+                trackingInterval = null;
+            }
+        }
+        
+        // Update volunteer marker on map
+        function updateVolunteerMarker(lat, lng) {
+            if (volunteerMarker) {
+                currentMap.removeLayer(volunteerMarker);
+            }
+            
+            volunteerMarker = L.marker([lat, lng])
+                .addTo(currentMap)
+                .bindPopup('<b>🚶 Your Current Location</b><br>Last updated: ' + new Date().toLocaleTimeString());
+        }
+        
+        // Update status indicator
+        function updateStatus(active) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+            const mapStatus = document.getElementById('mapStatus');
+            
+            if (active) {
+                indicator.className = 'status-indicator status-active';
+                text.textContent = 'Tracking Active';
+                mapStatus.className = 'map-status tracking';
+                mapStatus.innerHTML = '<i class="fas fa-circle"></i> Tracking Active';
+            } else {
+                indicator.className = 'status-indicator status-inactive';
+                text.textContent = 'Tracking Inactive';
+                mapStatus.className = 'map-status inactive';
+                mapStatus.innerHTML = '<i class="fas fa-circle"></i> Tracking Inactive';
+            }
+        }
+        
+        // Center map on all markers
+        function centerMapOnAllMarkers() {
+            if (!currentMap) return;
+            
+            const group = new L.featureGroup();
+            if (donorMarker) group.addLayer(donorMarker);
+            if (ngoMarker) group.addLayer(ngoMarker);
+            if (volunteerMarker) group.addLayer(volunteerMarker);
+            
+            if (group.getLayers().length > 0) {
+                currentMap.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+        
+        // Show route between markers
+        function showRoute() {
+            if (!currentMap || !donorMarker || !ngoMarker) return;
+            
+            // Remove existing route
+            if (routeLayer) {
+                currentMap.removeLayer(routeLayer);
+            }
+            
+            // Create route line
+            const route = L.polyline([
+                [donorMarker.getLatLng().lat, donorMarker.getLatLng().lng],
+                [ngoMarker.getLatLng().lat, ngoMarker.getLatLng().lng]
+            ], {
+                color: '#667eea',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 10'
+            }).addTo(currentMap);
+            
+            routeLayer = route;
+            
+            // Add route info
+            const distance = donorMarker.getLatLng().distanceTo(ngoMarker.getLatLng()) / 1000;
+            route.bindPopup(`<b>🚚 Delivery Route</b><br>Distance: ${distance.toFixed(2)} km`);
+        }
+        
+        // Toggle fullscreen
+        function toggleFullscreen() {
+            const mapContainer = document.querySelector('.map-container');
+            
+            if (!isFullscreen) {
+                if (mapContainer.requestFullscreen) {
+                    mapContainer.requestFullscreen();
+                } else if (mapContainer.webkitRequestFullscreen) {
+                    mapContainer.webkitRequestFullscreen();
+                } else if (mapContainer.msRequestFullscreen) {
+                    mapContainer.msRequestFullscreen();
+                }
+                isFullscreen = true;
+                document.getElementById('fullscreenBtn').innerHTML = '<i class="fas fa-compress"></i>';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                isFullscreen = false;
+                document.getElementById('fullscreenBtn').innerHTML = '<i class="fas fa-expand"></i>';
+            }
+        }
+        
+        // Refresh map
+        function refreshMap() {
+            if (!currentMap) return;
+            
+            currentMap.invalidateSize();
+            currentMap.setView(currentMap.getCenter(), currentMap.getZoom());
+            showAlert('Map refreshed successfully', 'success');
+        }
+        
+        // Show alert message
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-custom alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.content-section'));
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+        
+        // Update donation status
+        async function updateDonationStatus(status) {
+            try {
+                const response = await fetch('/api/pickup-tracking/location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        donation_id: donationId,
+                        status: status
+                    })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('donationStatus').textContent = status;
+                    showAlert(`Status updated to: ${status}`, 'success');
+                } else {
+                    showAlert('Failed to update status', 'danger');
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showAlert('Error updating status', 'danger');
+            }
+        }
+        
+        // Button event listeners
+        document.getElementById('startTracking').addEventListener('click', function() {
+            startLiveTracking();
+            this.disabled = true;
+            document.getElementById('stopTracking').disabled = false;
+            this.innerHTML = '<i class="fas fa-check"></i> Tracking Active';
+        });
+        
+        document.getElementById('stopTracking').addEventListener('click', function() {
+            stopLiveTracking();
+            this.disabled = true;
+            document.getElementById('startTracking').disabled = false;
+            document.getElementById('startTracking').innerHTML = '<i class="fas fa-play"></i> Start Tracking';
+        });
+        
+        document.getElementById('markInTransit').addEventListener('click', function() {
+            updateDonationStatus('in_transit');
+        });
+        
+        document.getElementById('markDelivered').addEventListener('click', function() {
+            if (confirm('Are you sure you want to mark this donation as delivered?')) {
+                updateDonationStatus('delivered');
+                stopLiveTracking();
+                showAlert('Donation marked as delivered!', 'success');
+            }
+        });
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initializeMap, 500);
+            
+            // Add map control event listeners
+            document.getElementById('centerMapBtn').addEventListener('click', centerMapOnAllMarkers);
+            document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+            document.getElementById('refreshMapBtn').addEventListener('click', refreshMap);
+            document.getElementById('showAllMarkersBtn').addEventListener('click', centerMapOnAllMarkers);
+            document.getElementById('showRouteBtn').addEventListener('click', showRoute);
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (isTracking) {
+                stopLiveTracking();
+            }
+        });
+        
+        // Handle page visibility change
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isTracking) {
+                stopLiveTracking();
+                showAlert('Tracking paused - page is not visible', 'warning');
+            }
+        });
+    </script>
+</body>
+</html>
