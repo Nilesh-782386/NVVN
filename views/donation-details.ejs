@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Donation #<%= donation.id %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .donation-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        .status-badge {
+            font-size: 0.9em;
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+        .item-badge {
+            font-size: 0.8em;
+            padding: 6px 12px;
+            margin: 2px;
+            border-radius: 15px;
+        }
+        .info-card {
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+        }
+        .volunteer-card {
+            border-left: 4px solid #28a745;
+            background: #f8f9fa;
+        }
+        .ngo-card {
+            border-left: 4px solid #ffc107;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="donation-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-gift"></i> Donation #<%= donation.id %></h1>
+                    <p class="mb-0">Complete details of your donation</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="status-badge badge bg-<%= donation.status === 'delivered' ? 'success' : donation.status === 'picked_up' ? 'primary' : 'warning' %>">
+                        <i class="fas fa-<%= donation.status === 'delivered' ? 'check-circle' : donation.status === 'picked_up' ? 'truck' : 'clock' %>"></i>
+                        <%= donation.status.charAt(0).toUpperCase() + donation.status.slice(1).replace('_', ' ') %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <!-- Donation Information -->
+            <div class="col-md-6 mb-4">
+                <div class="card info-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle"></i> Donation Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Donation ID:</strong></div>
+                            <div class="col-sm-8">#<%= donation.id %></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Created:</strong></div>
+                            <div class="col-sm-8"><%= new Date(donation.created_at).toLocaleDateString() %></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Priority:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge bg-<%= donation.priority === 'high' ? 'danger' : donation.priority === 'medium' ? 'warning' : 'info' %>">
+                                    <%= donation.priority.charAt(0).toUpperCase() + donation.priority.slice(1) %>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Items Donated:</strong></div>
+                            <div class="col-sm-8">
+                                <% if (donation.books > 0) { %>
+                                    <span class="item-badge badge bg-primary">Books: <%= donation.books %></span>
+                                <% } %>
+                                <% if (donation.clothes > 0) { %>
+                                    <span class="item-badge badge bg-success">Clothes: <%= donation.clothes %></span>
+                                <% } %>
+                                <% if (donation.grains > 0) { %>
+                                    <span class="item-badge badge bg-warning">Grains: <%= donation.grains %></span>
+                                <% } %>
+                                <% if (donation.footwear > 0) { %>
+                                    <span class="item-badge badge bg-dark">Footwear: <%= donation.footwear %></span>
+                                <% } %>
+                                <% if (donation.toys > 0) { %>
+                                    <span class="item-badge badge bg-info">Toys: <%= donation.toys %></span>
+                                <% } %>
+                                <% if (donation.school_supplies > 0) { %>
+                                    <span class="item-badge badge bg-secondary">School Supplies: <%= donation.school_supplies %></span>
+                                <% } %>
+                            </div>
+                        </div>
+                        <% if (donation.optnote) { %>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Notes:</strong></div>
+                            <div class="col-sm-8"><%= donation.optnote %></div>
+                        </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Information -->
+            <div class="col-md-6 mb-4">
+                <div class="card info-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Schedule Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Pickup Date:</strong></div>
+                            <div class="col-sm-8">
+                                <%= donation.pickup_date ? new Date(donation.pickup_date).toLocaleDateString() : 'Not scheduled' %>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Pickup Time:</strong></div>
+                            <div class="col-sm-8">
+                                <%= donation.pickup_time ? donation.pickup_time : 'Not scheduled' %>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Assigned Date:</strong></div>
+                            <div class="col-sm-8">
+                                <%= donation.assigned_at ? new Date(donation.assigned_at).toLocaleDateString() : 'Not assigned' %>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>District:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge bg-light text-dark"><%= donation.district %></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Volunteer Information -->
+            <% if (donation.volunteer_name) { %>
+            <div class="col-md-6 mb-4">
+                <div class="card volunteer-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user-tie"></i> Assigned Volunteer</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Name:</strong></div>
+                            <div class="col-sm-8"><%= donation.volunteer_name %></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Phone:</strong></div>
+                            <div class="col-sm-8">
+                                <a href="tel:<%= donation.volunteer_phone %>" class="text-decoration-none">
+                                    <i class="fas fa-phone"></i> <%= donation.volunteer_phone %>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Assignment ID:</strong></div>
+                            <div class="col-sm-8">#<%= donation.assignment_id || 'N/A' %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- NGO Information -->
+            <div class="col-md-6 mb-4">
+                <div class="card ngo-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-building"></i> Receiving NGO</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>NGO Name:</strong></div>
+                            <div class="col-sm-8"><%= donation.ngo_name || 'Not assigned' %></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>NGO ID:</strong></div>
+                            <div class="col-sm-8">#<%= donation.ngo_id || 'N/A' %></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Approval Status:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge bg-<%= donation.ngo_approval_status === 'approved' ? 'success' : 'warning' %>">
+                                    <%= donation.ngo_approval_status || 'Pending' %>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <a href="/donation-history" class="btn btn-primary me-2">
+                            <i class="fas fa-arrow-left"></i> Back to History
+                        </a>
+                        <% if (donation.status === 'picked_up' && donation.volunteer_name) { %>
+                        <a href="/volunteer/live-map/<%= donation.assignment_id %>" class="btn btn-info me-2">
+                            <i class="fas fa-map-marked-alt"></i> Live Tracking
+                        </a>
+                        <% } %>
+                        <button onclick="window.print()" class="btn btn-secondary">
+                            <i class="fas fa-print"></i> Print Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

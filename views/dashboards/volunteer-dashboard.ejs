@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Dashboard - CareConnect</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/distance-display.css">
+    <style>
+        /* Availability Management Styles */
+        .availability-display {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .availability-item {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .schedule-grid {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .day-schedule {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .day-schedule.active {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .day-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .day-label {
+            font-weight: 500;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        
+        .day-checkbox {
+            margin: 0;
+        }
+        
+        .time-inputs {
+            padding-left: 30px;
+        }
+        
+        .time-inputs input {
+            font-size: 0.9rem;
+        }
+        
+        .priority-badge {
+            font-size: 0.75em;
+            padding: 0.25em 0.5em;
+        }
+        
+        .donation-request-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+        
+        .donation-request-card.priority-high {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .donation-request-card.priority-urgent {
+            border-left: 4px solid #fd7e14;
+            background: #fff3cd;
+        }
+        
+        .auto-assignment-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <%- include("../partials/sidebar.ejs") %>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="dashboard-header">
+                <h1><i class="fas fa-hand-holding-heart text-success"></i> Volunteer Dashboard</h1>
+                <p class="text-muted">Welcome, <%= volunteer ? volunteer.fullname || volunteer.name : 'Volunteer' %></p>
+            </div>
+
+            <!-- Dashboard Stats -->
+            <div class="stats-grid">
+                <div class="stat-card bg-info grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= availableDonations ? availableDonations.length : 0 %></h3>
+                        <p>Available Requests</p>
+                    </div>
+                </div>
+                <div class="stat-card bg-primary grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= myDonations ? myDonations.filter(d => d.status === 'assigned').length : 0 %></h3>
+                        <p>Accepted Requests</p>
+                    </div>
+                </div>
+                <div class="stat-card bg-warning grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= myDonations ? myDonations.filter(d => d.status === 'picked_up').length : 0 %></h3>
+                        <p>In Progress</p>
+                    </div>
+                </div>
+                <div class="stat-card bg-success grid-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3><%= myDonations ? myDonations.filter(d => d.status === 'delivered' || d.status === 'completed').length : 0 %></h3>
+                        <p>Completed</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volunteer Status Overview - Three Horizontal Cards -->
+            <div class="status-overview">
+                <h2 class="section-title"><i class="fas fa-hands-helping text-success"></i> My Volunteer Dashboard</h2>
+                <div class="content-grid three-column">
+                    <!-- Available Requests Card -->
+                    <div class="status-card available-card">
+                        <div class="status-header">
+                            <h3><i class="fas fa-list text-info"></i> Available Requests</h3>
+                            <span class="count-badge bg-info"><%= availableDonations ? availableDonations.length : 0 %></span>
+                        </div>
+                        <div class="status-content">
+                            <% if (availableDonations && availableDonations.length > 0) { %>
+                                <% availableDonations.slice(0, 3).forEach(donation => { %>
+                                <div class="status-item">
+                                    <div class="item-header">
+                                        <span class="item-id">#<%= donation.id %></span>
+                                        <span class="item-date"><%= new Date(donation.created_at).toLocaleDateString() %></span>
+                                    </div>
+                                    <div class="item-content">
+                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.donor_name || 'Anonymous Donor' %></p>
+                                        <p class="location"><i class="fas fa-map-marker-alt"></i> <%= donation.city %>, <%= donation.state %></p>
+                                        <div class="item-badges">
+                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
+                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
+                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
+                                        </div>
+                                        <div class="item-actions">
+                                            <button class="btn btn-success btn-xs" onclick="acceptRequest(<%= donation.id %>)">
+                                                <i class="fas fa-check"></i> Accept
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% }); %>
+                                <% if (availableDonations.length > 3) { %>
+                                <div class="view-more">
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewAllAvailable()">
+                                        <i class="fas fa-plus"></i> View <%= availableDonations.length - 3 %> More
+                                    </button>
+                                </div>
+                                <% } %>
+                            <% } else { %>
+                                <div class="empty-state">
+                                    <i class="fas fa-search fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">No available requests in your area</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Accepted Requests Card -->
+                    <div class="status-card accepted-card">
+                        <div class="status-header">
+                            <h3><i class="fas fa-tasks text-primary"></i> Accepted Requests</h3>
+                            <span class="count-badge bg-primary"><%= myDonations ? myDonations.filter(d => d.status === 'assigned').length : 0 %></span>
+                        </div>
+                        <div class="status-content">
+                            <% 
+                            const acceptedDonations = myDonations ? myDonations.filter(d => d.status === 'assigned') : [];
+                            if (acceptedDonations.length > 0) { %>
+                                <% acceptedDonations.slice(0, 3).forEach(donation => { %>
+                                <div class="status-item">
+                                    <div class="item-header">
+                                        <span class="item-id">#<%= donation.id %></span>
+                                        <span class="status-badge bg-primary">Assigned</span>
+                                    </div>
+                                    <div class="item-content">
+                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.donor_name || 'Anonymous Donor' %></p>
+                                        <% if (donation.ngo_name) { %>
+                                        <p class="ngo-info"><i class="fas fa-home"></i> <%= donation.ngo_name %></p>
+                                        <% } %>
+                                        <div class="item-badges">
+                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
+                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
+                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
+                                        </div>
+                                        <div class="item-actions">
+                                            <button class="btn btn-warning btn-xs" onclick="markPickedUp(<%= donation.id %>)">
+                                                <i class="fas fa-truck"></i> Pick Up
+                                            </button>
+                                            <a href="/volunteer/live-map/<%= donation.assignment_id || donation.id %>" class="btn btn-info btn-xs">
+                                                <i class="fas fa-map-marked-alt"></i> Live Map
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% }); %>
+                                <% if (acceptedDonations.length > 3) { %>
+                                <div class="view-more">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="viewAllAccepted()">
+                                        <i class="fas fa-plus"></i> View <%= acceptedDonations.length - 3 %> More
+                                    </button>
+                                </div>
+                                <% } %>
+                            <% } else { %>
+                                <div class="empty-state">
+                                    <i class="fas fa-tasks fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">No accepted requests</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Completed Requests Card -->
+                    <div class="status-card completed-card">
+                        <div class="status-header">
+                            <h3><i class="fas fa-trophy text-success"></i> Completed Requests</h3>
+                            <span class="count-badge bg-success"><%= myDonations ? myDonations.filter(d => d.status === 'delivered' || d.status === 'completed').length : 0 %></span>
+                        </div>
+                        <div class="status-content">
+                            <% 
+                            const completedDonations = myDonations ? myDonations.filter(d => d.status === 'delivered' || d.status === 'completed') : [];
+                            if (completedDonations.length > 0) { %>
+                                <% completedDonations.slice(0, 3).forEach(donation => { %>
+                                <div class="status-item">
+                                    <div class="item-header">
+                                        <span class="item-id">#<%= donation.id %></span>
+                                        <span class="completion-date"><%= new Date(donation.updated_at).toLocaleDateString() %></span>
+                                    </div>
+                                    <div class="item-content">
+                                        <p class="donor-name"><i class="fas fa-user"></i> <%= donation.donor_name || 'Anonymous Donor' %></p>
+                                        <% if (donation.ngo_name) { %>
+                                        <p class="ngo-info"><i class="fas fa-home"></i> <%= donation.ngo_name %></p>
+                                        <% } %>
+                                        <div class="item-badges">
+                                            <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
+                                            <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
+                                            <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% }); %>
+                                <% if (completedDonations.length > 3) { %>
+                                <div class="view-more">
+                                    <button class="btn btn-outline-success btn-sm" onclick="viewAllCompleted()">
+                                        <i class="fas fa-plus"></i> View <%= completedDonations.length - 3 %> More
+                                    </button>
+                                </div>
+                                <% } %>
+                            <% } else { %>
+                                <div class="empty-state">
+                                    <i class="fas fa-trophy fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">No completed requests yet</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Available Donation Requests -->
+            <div class="section-card">
+                <h2><i class="fas fa-list text-info"></i> All Available Donation Requests</h2>
+                <div class="requests-grid">
+                    <% if (availableDonations && availableDonations.length > 0) { %>
+                        <% availableDonations.forEach(donation => { %>
+                        <div class="donation-request-card grid-item" 
+                             data-donation-id="<%= donation.id %>"
+                             data-lat="<%= donation.latitude || 0 %>"
+                             data-lng="<%= donation.longitude || 0 %>">
+                            <div class="card-header">
+                                <h5>Request #<%= donation.id %></h5>
+                                <span class="badge bg-warning">Pending</span>
+                            </div>
+                            <div class="card-body">
+                                <h6><i class="fas fa-user"></i> <%= donation.donor_name || 'Anonymous Donor' %></h6>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt"></i> <%= donation.city %>, <%= donation.state %>
+                                </p>
+                                
+                                <!-- DISTANCE DISPLAY -->
+                                <div class="distance-info alert alert-info">
+                                    <div class="distance-content">
+                                        <strong>📏 Exact Distance From You:</strong>
+                                        <div class="distance-value" id="distance-<%= donation.id %>">
+                                            <div class="distance-loading">
+                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                    <span class="visually-hidden">Calculating...</span>
+                                                </div>
+                                                Calculating distance...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="donation-items mb-3">
+                                    <% if (donation.books > 0) { %><span class="badge bg-info">Books: <%= donation.books %></span> <% } %>
+                                    <% if (donation.clothes > 0) { %><span class="badge bg-success">Clothes: <%= donation.clothes %></span> <% } %>
+                                    <% if (donation.grains > 0) { %><span class="badge bg-warning">Grains: <%= donation.grains %></span> <% } %>
+                                    <% if (donation.toys > 0) { %><span class="badge bg-primary">Toys: <%= donation.toys %></span> <% } %>
+                                    <% if (donation.footwear > 0) { %><span class="badge bg-dark">Footwear: <%= donation.footwear %></span> <% } %>
+                                </div>
+                                <% if (donation.pickup_date) { %>
+                                <p class="mb-2">
+                                    <i class="fas fa-calendar"></i> 
+                                    <strong>Pickup:</strong> <%= new Date(donation.pickup_date).toLocaleDateString() %>
+                                    <% if (donation.pickup_time) { %> at <%= donation.pickup_time %><% } %>
+                                </p>
+                                <% } %>
+                                <div class="card-actions">
+                                    <button class="btn btn-success btn-sm btn-accept" 
+                                            data-distance-id="<%= donation.id %>"
+                                            onclick="acceptDonationWithDistance(<%= donation.id %>)">
+                                        <i class="fas fa-check"></i> Accept
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewRequestDetails(<%= donation.id %>)">
+                                        <i class="fas fa-eye"></i> Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="grid-span-full text-center py-4">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No available donation requests in your area</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Availability Management -->
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2><i class="fas fa-calendar-check text-success"></i> My Availability</h2>
+                    <button class="btn btn-primary btn-sm" onclick="openAvailabilityModal()">
+                        <i class="fas fa-edit"></i> Update Schedule
+                    </button>
+                </div>
+                <div id="currentAvailability" class="availability-display">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                        <p>Click "Update Schedule" to set your availability</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Analytics -->
+            <div class="section-card">
+                <h2><i class="fas fa-chart-line text-info"></i> My Performance</h2>
+                <div class="charts-grid">
+                    <div class="chart-container grid-item">
+                        <h5><i class="fas fa-calendar-check"></i> Requests Completed Over Time</h5>
+                        <canvas id="volunteerProgressChart" style="height: 250px;"></canvas>
+                    </div>
+                    <div class="chart-container grid-item">
+                        <h5><i class="fas fa-hourglass-half"></i> Response Times</h5>
+                        <canvas id="responseTimeChart" style="height: 250px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Accepted Requests -->
+            <div class="section-card">
+                <h2><i class="fas fa-tasks text-primary"></i> My Accepted Requests</h2>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Donor</th>
+                                <th>Items</th>
+                                <th>Status</th>
+                                <th>Pickup</th>
+                                <th>NGO</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (myDonations && myDonations.length > 0) { %>
+                                <% myDonations.forEach(donation => { %>
+                                <tr>
+                                    <td>#<%= donation.id %></td>
+                                    <td>
+                                        <strong><%= donation.donor_name || 'Anonymous' %></strong><br>
+                                        <small class="text-muted"><%= donation.email %></small>
+                                    </td>
+                                    <td>
+                                        <% if (donation.books > 0) { %><span class="badge bg-info me-1">Books: <%= donation.books %></span><% } %>
+                                        <% if (donation.clothes > 0) { %><span class="badge bg-success me-1">Clothes: <%= donation.clothes %></span><% } %>
+                                        <% if (donation.grains > 0) { %><span class="badge bg-warning me-1">Grains: <%= donation.grains %></span><% } %>
+                                        <% if (donation.toys > 0) { %><span class="badge bg-primary me-1">Toys: <%= donation.toys %></span><% } %>
+                                        <% if (donation.footwear > 0) { %><span class="badge bg-dark me-1">Footwear: <%= donation.footwear %></span><% } %>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-<%= getStatusColor(donation.status) %>">
+                                            <%= donation.status.charAt(0).toUpperCase() + donation.status.slice(1) %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <% if (donation.pickup_date) { %>
+                                            <%= new Date(donation.pickup_date).toLocaleDateString() %>
+                                            <% if (donation.pickup_time) { %>
+                                                <br><small><%= donation.pickup_time %></small>
+                                            <% } %>
+                                        <% } else { %>
+                                            <span class="text-muted">Not scheduled</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <%= donation.ngo_name || 'Not assigned' %>
+                                    </td>
+                                    <td>
+                                        <% if (donation.status === 'assigned') { %>
+                                        <button class="btn btn-sm btn-primary" onclick="markPickedUp(<%= donation.id %>)">
+                                            <i class="fas fa-truck"></i> Picked Up
+                                        </button>
+                                        <% } else if (donation.status === 'picked_up') { %>
+                                        <button class="btn btn-sm btn-success" onclick="markDelivered(<%= donation.id %>)">
+                                            <i class="fas fa-check"></i> Delivered
+                                        </button>
+                                        <a href="/volunteer/pickup-tracking/<%= donation.id %>" class="btn btn-sm btn-info">
+                                            <i class="fas fa-map-marked-alt"></i> Live Tracking
+                                        </a>
+                                        <% } else if (donation.status === 'in_transit') { %>
+                                        <button class="btn btn-sm btn-success" onclick="markDelivered(<%= donation.id %>)">
+                                            <i class="fas fa-check"></i> Delivered
+                                        </button>
+                                        <a href="/volunteer/pickup-tracking/<%= donation.id %>" class="btn btn-sm btn-info">
+                                            <i class="fas fa-map-marked-alt"></i> Live Tracking
+                                        </a>
+                                        <% } %>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewRequestDetails(<%= donation.id %>)">
+                                            <i class="fas fa-eye"></i> Details
+                                        </button>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">No accepted requests yet</p>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Local NGOs & Donation Areas Map -->
+            <div class="section-card">
+                <h2><i class="fas fa-map text-success"></i> Local NGOs & Donation Areas</h2>
+                <div class="map-container">
+                    <div id="volunteerAreaMap" style="height: 400px; border-radius: 8px;"></div>
+                </div>
+                <div class="map-legend mt-3">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <i class="fas fa-home text-primary"></i>
+                            <small class="d-block">NGO Locations</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-map-marker-alt text-warning"></i>
+                            <small class="d-block">Donation Pickups</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-route text-info"></i>
+                            <small class="d-block">My Active Routes</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-user text-success"></i>
+                            <small class="d-block">My Location</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Availability Modal -->
+    <div class="modal fade" id="availabilityModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-calendar-edit"></i> Update Availability Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="availabilityForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Maximum Travel Distance</label>
+                                <div class="input-group">
+                                    <input type="number" id="maxRadius" class="form-control" value="10" min="1" max="50">
+                                    <span class="input-group-text">km</span>
+                                </div>
+                                <small class="text-muted">How far are you willing to travel for pickups?</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Your Location</label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="getCurrentLocation()">
+                                    <i class="fas fa-map-marker-alt"></i> Use Current Location
+                                </button>
+                                <div id="locationStatus" class="text-muted small mt-1">Click to set your location</div>
+                            </div>
+                        </div>
+                        
+                        <h6><i class="fas fa-clock"></i> Weekly Schedule</h6>
+                        <div class="schedule-grid">
+                            <div class="day-schedule" data-day="1">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day1" class="day-checkbox">
+                                    <label for="day1" class="day-label">Monday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="2">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day2" class="day-checkbox">
+                                    <label for="day2" class="day-label">Tuesday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="3">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day3" class="day-checkbox">
+                                    <label for="day3" class="day-label">Wednesday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="4">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day4" class="day-checkbox">
+                                    <label for="day4" class="day-label">Thursday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="5">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day5" class="day-checkbox">
+                                    <label for="day5" class="day-label">Friday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="09:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="6">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day6" class="day-checkbox">
+                                    <label for="day6" class="day-label">Saturday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="10:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="16:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="day-schedule" data-day="0">
+                                <div class="day-header">
+                                    <input type="checkbox" id="day0" class="day-checkbox">
+                                    <label for="day0" class="day-label">Sunday</label>
+                                </div>
+                                <div class="time-inputs" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm start-time" value="10:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="time" class="form-control form-control-sm end-time" value="16:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveAvailability()">
+                        <i class="fas fa-save"></i> Save Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script src="/js/enhanced-notifications.js"></script>
+    <script src="/js/dashboard-animations.js"></script>
+    <script src="/js/distance-calculator.js"></script>
+    <script src="/js/live-volunteer-location.js"></script>
+    <script src="/js/volunteer-dashboard.js"></script>
+    
+    <script>
+    // Initialize live location and calculate distances
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🚀 Initializing live volunteer location...');
+        
+        try {
+            // Initialize live location service
+            const liveLocation = await window.volunteerLocationService.init();
+            
+            if (liveLocation) {
+                console.log('✅ Live location initialized:', liveLocation);
+                // Update all donation cards with live distance
+                updateAllDonationDistances();
+            } else {
+                console.log('⚠️ Using static district coordinates as fallback');
+                // Fallback to existing distance calculation
+                if (typeof calculateAllDistances === 'function') {
+                    calculateAllDistances();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Failed to initialize live location:', error);
+            // Fallback to existing distance calculation
+            if (typeof calculateAllDistances === 'function') {
+                calculateAllDistances();
+            }
+        }
+    });
+
+    function updateAllDonationDistances() {
+        console.log('🔄 Updating all donation distances with live location...');
+        
+        document.querySelectorAll('.donation-request-card').forEach(card => {
+            const donationId = card.dataset.donationId;
+            const donationLat = parseFloat(card.dataset.lat);
+            const donationLng = parseFloat(card.dataset.lng);
+            
+            if (donationLat && donationLng && donationLat !== 0 && donationLng !== 0) {
+                const distance = window.volunteerLocationService.calculateDistanceTo(donationLat, donationLng);
+                
+                if (distance !== null) {
+                    const distanceElement = document.getElementById(`distance-${donationId}`);
+                    if (distanceElement) {
+                        distanceElement.innerHTML = `
+                            <div class="live-distance-info">
+                                <span class="distance-number">${distance.toFixed(1)} KM</span>
+                                <small class="text-success">📍 From your current location</small>
+                            </div>
+                        `;
+                        
+                        // Color code based on distance
+                        if (distance > 20) {
+                            distanceElement.classList.add('distance-far');
+                        } else if (distance > 10) {
+                            distanceElement.classList.add('distance-medium');
+                        } else {
+                            distanceElement.classList.add('distance-near');
+                        }
+                    }
+                } else {
+                    const distanceElement = document.getElementById(`distance-${donationId}`);
+                    if (distanceElement) {
+                        distanceElement.innerHTML = `
+                            <div class="text-muted">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Distance unavailable
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                const distanceElement = document.getElementById(`distance-${donationId}`);
+                if (distanceElement) {
+                    distanceElement.innerHTML = `
+                        <div class="text-muted">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Location not available
+                        </div>
+                    `;
+                }
+            }
+        });
+    }
+
+    // Enhanced acceptance function with live distance
+    async function acceptDonationWithDistance(donationId) {
+        console.log(`🎯 Accepting donation ${donationId} with live distance...`);
+        
+        try {
+            // Get live location first
+            const liveLocation = await window.volunteerLocationService.getLiveLocation();
+            const donationCard = document.querySelector(`[data-donation-id="${donationId}"]`);
+            const donationLat = parseFloat(donationCard.dataset.lat);
+            const donationLng = parseFloat(donationCard.dataset.lng);
+            
+            // Calculate live distance
+            const liveDistance = window.volunteerLocationService.calculateDistanceTo(donationLat, donationLng);
+            
+            // Show confirmation with LIVE distance
+            if (liveDistance !== null) {
+                const confirmMessage = `✅ Accept this donation?\n\n📍 Live Distance: ${liveDistance.toFixed(1)} km from your current location`;
+                if (confirm(confirmMessage)) {
+                    proceedWithAcceptance(donationId, liveDistance);
+                }
+            } else {
+                // Show confirmation without distance
+                if (confirm('✅ Accept this donation?')) {
+                    proceedWithAcceptance(donationId, null);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Failed to get live location:', error);
+            // Fallback to static distance
+            if (confirm('✅ Accept this donation?')) {
+                proceedWithAcceptance(donationId, null);
+            }
+        }
+    }
+
+    function proceedWithAcceptance(donationId, liveDistance) {
+        console.log(`📝 Proceeding with acceptance for donation ${donationId}, distance: ${liveDistance} km`);
+        
+        // Show loading state
+        const acceptButton = document.querySelector(`[data-distance-id="${donationId}"]`);
+        if (acceptButton) {
+            acceptButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accepting...';
+            acceptButton.disabled = true;
+        }
+        
+        // Prepare request data
+        const requestData = {
+            live_distance: liveDistance,
+            live_location: window.volunteerLocationService.currentLocation
+        };
+        
+        // Make API call
+        fetch(`/api/assignments/${donationId}/accept`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess(`Donation accepted successfully! ${liveDistance ? `Distance: ${liveDistance.toFixed(1)} km` : ''}`);
+                // Refresh the page or update UI
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showError('Acceptance failed: ' + (data.error || 'Unknown error'));
+                // Reset button
+                if (acceptButton) {
+                    acceptButton.innerHTML = '<i class="fas fa-check"></i> Accept';
+                    acceptButton.disabled = false;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Acceptance error:', error);
+            showError('Failed to accept donation. Please try again.');
+            // Reset button
+            if (acceptButton) {
+                acceptButton.innerHTML = '<i class="fas fa-check"></i> Accept';
+                acceptButton.disabled = false;
+            }
+        });
+    }
+
+    // Notification functions
+    function showSuccess(message) {
+        // Create success notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas fa-check-circle"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 5000);
+    }
+
+    function showError(message) {
+        // Create error notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        // Auto remove after 7 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 7000);
+    }
+
+    // Initialize Volunteer Area Map
+    function initializeVolunteerAreaMap() {
+        if (document.getElementById('volunteerAreaMap')) {
+            // Default coordinates for Nagpur area
+            const nagpurLat = 21.1458;
+            const nagpurLng = 79.0882;
+            
+            // Initialize map centered on Nagpur
+            const map = L.map('volunteerAreaMap').setView([nagpurLat, nagpurLng], 10);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+            
+            // Add some sample markers for Nagpur area
+            const sampleLocations = [
+                { lat: 21.1458, lng: 79.0882, name: 'Nagpur Center', type: 'center' },
+                { lat: 21.1600, lng: 79.1000, name: 'Nagpur East', type: 'area' },
+                { lat: 21.1300, lng: 79.0800, name: 'Nagpur West', type: 'area' },
+                { lat: 21.1500, lng: 79.0700, name: 'Nagpur North', type: 'area' },
+                { lat: 21.1400, lng: 79.0900, name: 'Nagpur South', type: 'area' },
+                { lat: 21.2000, lng: 79.1200, name: 'Nagpur Airport', type: 'landmark' }
+            ];
+            
+            sampleLocations.forEach(location => {
+                const iconColor = location.type === 'center' ? 'red' : 'blue';
+                const iconSize = location.type === 'center' ? [20, 20] : [15, 15];
+                
+                L.marker([location.lat, location.lng], {
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background-color: ${iconColor}; width: ${iconSize[0]}px; height: ${iconSize[1]}px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: iconSize,
+                        iconAnchor: [iconSize[0]/2, iconSize[1]/2]
+                    })
+                }).addTo(map).bindPopup(`<b>${location.name}</b><br>${location.type === 'center' ? 'Center Point' : 'City'}`);
+            });
+            
+            console.log('✅ Volunteer Area Map initialized successfully');
+        }
+    }
+
+    // Initialize map when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait for Leaflet to load
+        setTimeout(() => {
+            initializeVolunteerAreaMap();
+        }, 500);
+    });
+    </script>
+</body>
+</html>
+
+<% 
+function getStatusColor(status) {
+    switch(status) {
+        case 'pending': return 'warning';
+        case 'assigned': return 'info';
+        case 'picked_up': return 'primary';
+        case 'delivered': return 'success';
+        case 'completed': return 'success';
+        default: return 'secondary';
+    }
+}
+%>

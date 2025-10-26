@@ -1,0 +1,237 @@
+-- CareConnect Database Schema
+-- Creates tables for donors, volunteers, NGOs, and donation requests
+
+-- Donors table
+CREATE TABLE IF NOT EXISTS donors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fullname VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(10),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Volunteers table
+CREATE TABLE IF NOT EXISTS volunteers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fullname VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(10),
+    availability VARCHAR(50) DEFAULT 'available',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- NGOs table
+CREATE TABLE IF NOT EXISTS ngos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ngo_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    registration_number VARCHAR(100) UNIQUE NOT NULL,
+    contact_person VARCHAR(255),
+    phone VARCHAR(20),
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(10),
+    description TEXT,
+    verification_status VARCHAR(20) DEFAULT 'pending',
+    document_path VARCHAR(512),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Donation requests table
+CREATE TABLE IF NOT EXISTS donation_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    donor_id INT,
+    volunteer_id INT,
+    ngo_id INT,
+    FOREIGN KEY (donor_id) REFERENCES donors(id),
+    FOREIGN KEY (volunteer_id) REFERENCES volunteers(id),
+    FOREIGN KEY (ngo_id) REFERENCES ngos(id),
+    title VARCHAR(255),
+    description TEXT,
+    
+    -- Donation items
+    books INTEGER DEFAULT 0,
+    clothes INTEGER DEFAULT 0,
+    grains INTEGER DEFAULT 0,
+    footwear INTEGER DEFAULT 0,
+    toys INTEGER DEFAULT 0,
+    school_supplies INTEGER DEFAULT 0,
+    
+    -- Pickup details
+    pickup_date DATE,
+    pickup_time TIME,
+    pickup_address TEXT,
+    pickup_city VARCHAR(100),
+    pickup_state VARCHAR(100),
+    pickup_pincode VARCHAR(10),
+    
+    -- Contact details
+    contact_name VARCHAR(255),
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(20),
+    contact_phone2 VARCHAR(20),
+    
+    -- Additional details
+    optional_note TEXT,
+    proof_image VARCHAR(512),
+    
+    -- Status tracking
+    status VARCHAR(50) DEFAULT 'pending',
+    volunteer_name VARCHAR(255),
+    volunteer_phone VARCHAR(50),
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    assigned_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_donors_email ON donors(email);
+CREATE INDEX IF NOT EXISTS idx_volunteers_email ON volunteers(email);
+CREATE INDEX IF NOT EXISTS idx_ngos_email ON ngos(email);
+CREATE INDEX IF NOT EXISTS idx_donation_requests_status ON donation_requests(status);
+CREATE INDEX IF NOT EXISTS idx_donation_requests_donor ON donation_requests(donor_id);
+CREATE INDEX IF NOT EXISTS idx_donation_requests_volunteer ON donation_requests(volunteer_id);
+CREATE INDEX IF NOT EXISTS idx_donation_requests_ngo ON donation_requests(ngo_id);
+
+-- Legacy table compatibility (for existing code)
+-- Keep existing users and ngo_register tables but link to new structure
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fullname VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ngo_register (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ngo_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    registration_number VARCHAR(100) UNIQUE NOT NULL,
+    contact_person VARCHAR(255),
+    phone VARCHAR(20),
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(10),
+    description TEXT,
+    verification_status VARCHAR(20) DEFAULT 'pending',
+    document_path VARCHAR(512),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS donations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    volunteer_id INT,
+    ngo_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (volunteer_id) REFERENCES volunteers(id),
+    FOREIGN KEY (ngo_id) REFERENCES ngos(id),
+    title VARCHAR(255),
+    description TEXT,
+    books INTEGER DEFAULT 0,
+    clothes INTEGER DEFAULT 0,
+    grains INTEGER DEFAULT 0,
+    footwear INTEGER DEFAULT 0,
+    toys INTEGER DEFAULT 0,
+    school_supplies INTEGER DEFAULT 0,
+    pickup_date DATE,
+    pickup_time TIME,
+    fname VARCHAR(255),
+    lname VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(20),
+    phone2 VARCHAR(20),
+    flat VARCHAR(255),
+    addline TEXT,
+    land VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(10),
+    optnote TEXT,
+    proof_image VARCHAR(512),
+    status VARCHAR(50) DEFAULT 'pending_approval',
+    volunteer_name VARCHAR(255),
+    volunteer_phone VARCHAR(50),
+    priority ENUM('critical', 'high', 'medium', 'low') DEFAULT 'medium',
+    ngo_approval_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    assigned_at TIMESTAMP,
+    -- Additional columns for enhanced functionality
+    district VARCHAR(100),
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    ai_suggested_priority ENUM('critical', 'high', 'medium', 'low') DEFAULT 'medium',
+    final_priority ENUM('critical', 'high', 'medium', 'low') DEFAULT 'medium',
+    is_manual_override BOOLEAN DEFAULT FALSE,
+    is_custom_item BOOLEAN DEFAULT FALSE,
+    custom_description TEXT,
+    custom_quantity INTEGER DEFAULT 0,
+    is_universal_item BOOLEAN DEFAULT FALSE
+);
+
+-- System admins table for admin authentication
+CREATE TABLE IF NOT EXISTS system_admins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Create a comprehensive migration script for missing columns
+-- Note: These ALTER TABLE statements should be run separately as MySQL doesn't support IF NOT EXISTS for ALTER TABLE
+
+-- Volunteers table enhancements
+-- ALTER TABLE volunteers ADD COLUMN name VARCHAR(255);
+-- ALTER TABLE volunteers ADD COLUMN district VARCHAR(100);
+-- ALTER TABLE volunteers ADD COLUMN vehicle_type VARCHAR(50);
+-- ALTER TABLE volunteers ADD COLUMN status ENUM('active', 'inactive', 'suspended') DEFAULT 'active';
+-- ALTER TABLE volunteers ADD COLUMN ngo_id INT;
+-- ALTER TABLE volunteers ADD COLUMN latitude DECIMAL(10, 8);
+-- ALTER TABLE volunteers ADD COLUMN longitude DECIMAL(11, 8);
+-- ALTER TABLE volunteers ADD FOREIGN KEY (ngo_id) REFERENCES ngo_register(id);
+
+-- NGO register table enhancements
+-- ALTER TABLE ngo_register ADD COLUMN primary_phone VARCHAR(20);
+-- ALTER TABLE ngo_register ADD COLUMN alternate_phone VARCHAR(20);
+-- ALTER TABLE ngo_register ADD COLUMN landmark VARCHAR(255);
+-- ALTER TABLE ngo_register ADD COLUMN district VARCHAR(100);
+-- ALTER TABLE ngo_register ADD COLUMN website_url VARCHAR(255);
+-- ALTER TABLE ngo_register ADD COLUMN social_handle_url VARCHAR(255);
+-- ALTER TABLE ngo_register ADD COLUMN registration_certificate VARCHAR(512);
+-- ALTER TABLE ngo_register ADD COLUMN status ENUM('applied', 'verified', 'suspended', 'rejected') DEFAULT 'applied';
+-- ALTER TABLE ngo_register ADD COLUMN latitude DECIMAL(10, 8);
+-- ALTER TABLE ngo_register ADD COLUMN longitude DECIMAL(11, 8);
+-- ALTER TABLE ngo_register ADD COLUMN ngo_type ENUM('multi_purpose', 'education', 'health', 'environment', 'women_empowerment', 'child_welfare', 'elderly_care', 'disability_support', 'animal_welfare', 'disaster_relief') DEFAULT 'multi_purpose';
+-- ALTER TABLE ngo_register ADD COLUMN can_accept_universal BOOLEAN DEFAULT TRUE;
+
+-- Users table enhancements
+-- ALTER TABLE users ADD COLUMN city VARCHAR(100);
+-- ALTER TABLE users ADD COLUMN district VARCHAR(100);
+-- ALTER TABLE users ADD COLUMN latitude DECIMAL(10, 8);
+-- ALTER TABLE users ADD COLUMN longitude DECIMAL(11, 8);
+
+-- Fix donation_requests table (missing id column)
+-- ALTER TABLE donation_requests ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY FIRST;

@@ -1,0 +1,143 @@
+import express from "express";
+import { query } from "../db.js";
+import { ensureNGOAuthenticated } from "../middleware/auth.js";
+
+const router = express.Router();
+
+// NGO Dashboard Main Page - KEEP ALL FEATURES, JUST FIX VARIABLE NAMES
+router.get("/ngo-dashboard", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    const ngoId = req.session.user.id;
+    
+    // Get NGO details
+    const ngoResult = await query(
+      "SELECT * FROM ngo_register WHERE id = ?",
+      [ngoId]
+    );
+    
+    const ngo = ngoResult[0] && ngoResult[0][0];
+    
+    // KEEP ALL THE COMPREHENSIVE QUERIES BUT RENAME VARIABLES TO MATCH EJS
+    const pendingResult = await query(`
+      SELECT d.*, u.fullname as donor_name, v.name as volunteer_name, v.phone as volunteer_phone
+      FROM donations d
+      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      WHERE d.status = 'pending'
+      ORDER BY d.created_at DESC
+    `);
+    
+    const confirmedResult = await query(`
+      SELECT d.*, u.fullname as donor_name, v.name as volunteer_name, v.phone as volunteer_phone
+      FROM donations d
+      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      WHERE d.status IN ('assigned', 'picked_up', 'in_transit')
+      ORDER BY 
+        CASE 
+          WHEN d.status = 'assigned' THEN 1
+          WHEN d.status = 'picked_up' THEN 2
+          WHEN d.status = 'in_transit' THEN 3
+          ELSE 4
+        END,
+        d.created_at DESC
+    `);
+    
+    const completedResult = await query(`
+      SELECT d.*, u.fullname as donor_name, v.name as volunteer_name, v.phone as volunteer_phone
+      FROM donations d
+      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      WHERE d.status IN ('delivered', 'completed')
+      ORDER BY d.created_at DESC
+    `);
+    
+    const volunteersResult = await query(`
+      SELECT DISTINCT volunteer_name, volunteer_phone, 
+             COUNT(*) as active_donations,
+             MIN(city) as city
+      FROM donations 
+      WHERE volunteer_name IS NOT NULL 
+        AND status IN ('assigned', 'picked_up', 'in_transit')
+      GROUP BY volunteer_name, volunteer_phone
+    `);
+    
+    // RENDER WITH COMPREHENSIVE DATA BUT MATCHING EJS VARIABLE NAMES
+    res.render("dashboards/ngo-dashboard", {
+      currentPage: 'ngo-dashboard',
+      ngo: ngo,
+      pendingDonations: pendingResult[0] || [],
+      confirmedDonations: confirmedResult[0] || [],
+      completedDonations: completedResult[0] || [],
+      assignedVolunteers: volunteersResult[0] || []
+    });
+    
+  } catch (err) {
+    console.error("NGO Dashboard error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+// KEEP ALL API ENDPOINTS FOR FULL FUNCTIONALITY
+router.get("/api/ngo/dashboard-data", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    const ngoId = req.session.user.id;
+    
+    const statsResult = await query(`
+      SELECT 
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+        COUNT(CASE WHEN status = 'assigned' THEN 1 END) as assigned,
+        COUNT(CASE WHEN status = 'picked_up' THEN 1 END) as picked_up,
+        COUNT(CASE WHEN status = 'in_transit' THEN 1 END) as in_transit,
+        COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
+      FROM donations 
+    `);
+    
+    const stats = statsResult[0] && statsResult[0][0] ? statsResult[0][0] : {};
+    
+    res.json({ stats: stats });
+    
+  } catch (err) {
+    console.error("NGO API error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/api/ngo/assign-donation/:id", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    const donationId = req.params.id;
+    const ngoId = req.session.user.id;
+    
+    await query(
+      "UPDATE donations SET ngo_id = ? WHERE id = ? AND ngo_id IS NULL",
+      [ngoId, donationId]
+    );
+    
+    res.json({ success: true, message: "Donation assigned to your NGO!" });
+    
+  } catch (err) {
+    console.error("Assign donation error:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
+router.post("/api/ngo/receive-donation/:id", ensureNGOAuthenticated, async (req, res) => {
+  try {
+    const donationId = req.params.id;
+    const ngoId = req.session.user.id;
+    
+    await query(
+      "UPDATE donations SET status = 'completed' WHERE id = ? AND ngo_id = ?",
+      [donationId, ngoId]
+    );
+    
+    res.json({ success: true, message: "Donation marked as received!" });
+    
+  } catch (err) {
+    console.error("Receive donation error:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
+export default router;
