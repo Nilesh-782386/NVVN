@@ -244,7 +244,27 @@
                     refreshBtn.disabled = true;
                 }
                 
-                const response = await fetch('/api/donations/history');
+                const response = await fetch('/api/donations/history', { credentials: 'same-origin' });
+                const contentType = response.headers.get('content-type') || '';
+
+                if (!response.ok || !contentType.includes('application/json')) {
+                    // If we got HTML (likely a redirect to login) or non-OK, treat as session issue
+                    const text = await response.text().catch(() => '');
+                    console.error('❌ Unexpected response for history API:', {
+                        status: response.status,
+                        redirected: response.redirected,
+                        contentType,
+                        preview: text.slice(0, 200)
+                    });
+                    const isSessionIssue = response.status === 401 || response.redirected || (contentType.includes('text/html'));
+                    showMessage(isSessionIssue ? 'Session expired. Please log in again.' : 'Failed to load donation history.', 'error');
+                    if (isSessionIssue) {
+                        // Optional: navigate to login preserving return path
+                        setTimeout(() => { window.location.href = '/user-login?next=/donation-history'; }, 1200);
+                    }
+                    return; // stop further processing
+                }
+
                 const data = await response.json();
                 
                 console.log('📡 API Response:', data);

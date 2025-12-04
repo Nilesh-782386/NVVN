@@ -29,7 +29,7 @@ router.get('/api/pickup-tracking/:donationId', async (req, res) => {
             LEFT JOIN volunteers v ON d.volunteer_id = v.id
             LEFT JOIN ngo_register n ON d.ngo_id = n.id
             LEFT JOIN users u ON d.user_id = u.id
-            WHERE d.id = ? AND d.status IN ('picked_up', 'in_transit')
+            WHERE d.id = ? AND d.status IN ('assigned', 'picked_up', 'in_transit')
         `, [donationId]);
         
         if (donationResult.length === 0) {
@@ -229,7 +229,7 @@ router.get('/volunteer/pickup-tracking/:donationId', async (req, res) => {
             LEFT JOIN volunteers v ON d.volunteer_id = v.id
             LEFT JOIN ngo_register n ON d.ngo_id = n.id
             LEFT JOIN users u ON d.user_id = u.id
-            WHERE d.id = ? AND d.volunteer_id = ? AND d.status IN ('picked_up', 'in_transit')
+            WHERE d.id = ? AND d.volunteer_id = ? AND d.status IN ('assigned', 'picked_up', 'in_transit')
         `, [donationId, req.session.volunteer.id]);
         
         if (donationResult.length === 0) {
@@ -272,7 +272,7 @@ router.get('/ngo/pickup-tracking/:donationId', async (req, res) => {
             LEFT JOIN volunteers v ON d.volunteer_id = v.id
             LEFT JOIN ngo_register n ON d.ngo_id = n.id
             LEFT JOIN users u ON d.user_id = u.id
-            WHERE d.id = ? AND d.ngo_id = ? AND d.status IN ('picked_up', 'in_transit')
+            WHERE d.id = ? AND d.ngo_id = ? AND d.status IN ('assigned', 'picked_up', 'in_transit')
         `, [donationId, req.session.ngo.id]);
         
         if (donationResult.length === 0) {

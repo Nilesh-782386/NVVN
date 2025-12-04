@@ -319,6 +319,36 @@ router.get("/donation/details/:id", ensureUserAuthenticated, async (req, res) =>
   }
 });
 
+// API: Get a specific donation (JSON) for the logged-in donor – used by Donation History modal
+router.get("/api/donations/:id", ensureUserAuthenticated, async (req, res) => {
+  try {
+    const donationId = req.params.id;
+    const userId = req.session.user.id;
+
+    const result = await query(`
+      SELECT d.*, COALESCE(v.fullname, v.name) as volunteer_name, v.phone as volunteer_phone, n.ngo_name,
+             u.fullname as donor_name, u.phone as donor_phone, u.email as donor_email
+      FROM donations d
+      LEFT JOIN volunteers v ON d.volunteer_id = v.id
+      LEFT JOIN ngo_register n ON d.ngo_id = n.id
+      LEFT JOIN users u ON d.user_id = u.id
+      WHERE d.id = ? AND d.user_id = ?
+    `, [donationId, userId]);
+
+    if (result && result.length > 0) {
+      return res.json({ success: true, donation: result[0] });
+    }
+
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Donation not found or access denied' 
+    });
+  } catch (error) {
+    console.error("API donation details error:", error);
+    return res.status(500).json({ success: false, message: 'Failed to load donation details' });
+  }
+});
+
 // API: Get specific donation details
 // API: Get donation coordinates for distance calculation
 router.get("/api/donations/:id/coordinates", async (req, res) => {

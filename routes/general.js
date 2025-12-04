@@ -211,16 +211,16 @@ router.post("/query", async (req, res) => {
 // API: Get all volunteers
 router.get("/api/volunteers", ensureAdminAuthenticated, async (req, res) => {
   try {
-    const [volunteers] = await query(`
+    const volunteers = await query(`
       SELECT v.*, n.ngo_name
       FROM volunteers v
       LEFT JOIN ngo_register n ON v.ngo_id = n.id
       ORDER BY v.created_at DESC
     `);
-    
-    res.json({ 
-      success: true, 
-      volunteers: volunteers || [] 
+
+    res.json({
+      success: true,
+      volunteers: volunteers || []
     });
   } catch (error) {
     console.error("Volunteers API error:", error);
@@ -235,23 +235,23 @@ router.get("/api/volunteers", ensureAdminAuthenticated, async (req, res) => {
 router.get("/api/volunteers/:id", ensureAdminAuthenticated, async (req, res) => {
   try {
     const volunteerId = req.params.id;
-    
-    const [result] = await query(`
+
+    const result = await query(`
       SELECT v.*, n.ngo_name
       FROM volunteers v
       LEFT JOIN ngo_register n ON v.ngo_id = n.id
       WHERE v.id = ?
     `, [volunteerId]);
-    
+
     if (result && result.length > 0) {
-      res.json({ 
-        success: true, 
-        volunteer: result[0] 
+      res.json({
+        success: true,
+        volunteer: result[0]
       });
     } else {
-      res.status(404).json({ 
-        success: false, 
-        message: "Volunteer not found" 
+      res.status(404).json({
+        success: false,
+        message: "Volunteer not found"
       });
     }
   } catch (error) {
