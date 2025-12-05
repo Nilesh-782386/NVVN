@@ -22,7 +22,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Volunteer Profile Routes
-router.get("/volunteer/my-requests", ensureVolunteerAuthenticated, async (req, res) => {
+// API Endpoint: Returns JSON data (for AJAX calls)
+router.get("/api/volunteer/my-requests", ensureVolunteerAuthenticated, async (req, res) => {
   try {
     const volunteerId = req.session.volunteer.id;
     
@@ -55,7 +56,14 @@ router.get("/volunteer/my-requests", ensureVolunteerAuthenticated, async (req, r
   }
 });
 
-router.get("/volunteer/available", ensureVolunteerAuthenticated, async (req, res) => {
+// Page Route: Redirects to visual dashboard
+router.get("/volunteer/my-requests", ensureVolunteerAuthenticated, (req, res) => {
+  // Redirect to the visual volunteer dashboard
+  res.redirect("/volunteer-dashboard");
+});
+
+// API Endpoint: Returns JSON data (for AJAX calls)
+router.get("/api/volunteer/available", ensureVolunteerAuthenticated, async (req, res) => {
   try {
     console.log("🔍 Volunteer available route called");
     const volunteerId = req.session.volunteer.id;
@@ -124,6 +132,12 @@ router.get("/volunteer/available", ensureVolunteerAuthenticated, async (req, res
     
     res.status(500).json(errorResponse);
   }
+});
+
+// Page Route: Redirects to visual dashboard
+router.get("/volunteer/available", ensureVolunteerAuthenticated, (req, res) => {
+  // Redirect to the visual volunteer dashboard
+  res.redirect("/volunteer-dashboard");
 });
 
 // Volunteer Dashboard Data - UPDATED QUERY
@@ -250,7 +264,7 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
 
     // Check if donation exists and is available
     const donationCheck = await query(
-      "SELECT id, status, volunteer_id, district, ngo_id FROM donations WHERE id = ?",
+      "SELECT id, status, volunteer_id, district, ngo_id, ngo_approval_status FROM donations WHERE id = ?",
       [donationId]
     );
 
@@ -262,9 +276,28 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
     const donation = donationCheck[0];
     console.log("🔍 Donation found:", donation);
 
+    // Validate donation is approved by NGO
+    if (donation.ngo_approval_status !== 'approved') {
+      console.log("❌ Donation not approved by NGO:", donation.ngo_approval_status);
+      return res.json({ success: false, message: "Donation must be approved by an NGO first" });
+    }
+
+    // Validate NGO is assigned
+    if (!donation.ngo_id) {
+      console.log("❌ Donation has no NGO assigned");
+      return res.json({ success: false, message: "Donation must be assigned to an NGO first" });
+    }
+
+    // Validate donation is not already assigned to a volunteer
     if (donation.volunteer_id !== null) {
       console.log("❌ Donation already assigned to volunteer:", donation.volunteer_id);
       return res.json({ success: false, message: "Donation already assigned to another volunteer" });
+    }
+
+    // Validate donation status
+    if (donation.status !== 'assigned') {
+      console.log("❌ Donation not in correct status:", donation.status);
+      return res.json({ success: false, message: `Donation is in ${donation.status} status and cannot be accepted` });
     }
 
     // Determine volunteer's pickup location
@@ -330,7 +363,11 @@ router.post("/accept-donation/:id", ensureVolunteerAuthenticated, async (req, re
         volunteer_latitude = ?,
         volunteer_longitude = ?,
         volunteer_address = ?
-       WHERE id = ? AND (volunteer_id IS NULL OR volunteer_id = '')`,
+       WHERE id = ? 
+         AND volunteer_id IS NULL 
+         AND ngo_approval_status = 'approved' 
+         AND status = 'assigned'
+         AND ngo_id IS NOT NULL`,
       [volunteerId, volunteerName, volunteerPhone, pickupLocation.latitude, pickupLocation.longitude, pickupLocation.address, donationId]
     );
 

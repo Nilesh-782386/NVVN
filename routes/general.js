@@ -130,12 +130,22 @@ router.get("/volunteer-dashboard", ensureVolunteerAuthenticated, async (req, res
     console.log("🔍 VOLUNTEER DASHBOARD - Volunteer District:", volunteerDistrict);
     
     // Get assigned donations in the volunteer's district (case insensitive) with coordinates
+    // Only show donations that are approved by NGO and not yet assigned to a volunteer
     const availableResult = await query(`
       SELECT d.*, u.fullname as donor_name, u.phone as donor_phone, n.ngo_name
       FROM donations d 
       LEFT JOIN users u ON d.user_id = u.id 
       LEFT JOIN ngo_register n ON d.ngo_id = n.id
-      WHERE LOWER(d.district) = LOWER(?) AND d.status = 'assigned' AND d.volunteer_id IS NULL
+      WHERE (
+        LOWER(d.district) = LOWER(?) OR 
+        LOWER(d.city) = LOWER(?) OR
+        (d.district IS NULL AND LOWER(d.city) = LOWER(?)) OR
+        (d.city IS NULL AND LOWER(d.district) = LOWER(?))
+      ) 
+        AND d.ngo_approval_status = 'approved' 
+        AND d.status = 'assigned' 
+        AND d.volunteer_id IS NULL
+        AND d.ngo_id IS NOT NULL
       ORDER BY 
         CASE d.priority 
           WHEN 'critical' THEN 1 
@@ -144,7 +154,7 @@ router.get("/volunteer-dashboard", ensureVolunteerAuthenticated, async (req, res
           WHEN 'low' THEN 4 
         END,
         d.created_at DESC
-    `, [volunteerDistrict]);
+    `, [volunteerDistrict, volunteerDistrict, volunteerDistrict, volunteerDistrict]);
 
     console.log("🔍 VOLUNTEER DASHBOARD - Available donations count:", availableResult?.length || 0);
     console.log("🔍 VOLUNTEER DASHBOARD - Available donations:", availableResult || []);
