@@ -7,15 +7,41 @@ let volunteerMarker = null;
 
 // Initialize map with donor and NGO locations
 function initLiveMap(donorCoords, ngoCoords) {
-        // Default coordinates for Nagpur area if coordinates are null
-        const nagpurLat = 21.1458;
-        const nagpurLng = 79.0882;
+    // Use provided coordinates from API (which uses district-based coordinates)
+    // If coordinates are missing, calculate from available coordinates
+    let donorLat, donorLng, ngoLat, ngoLng;
     
-    // Use provided coordinates or Nagpur defaults
-    const donorLat = donorCoords && donorCoords.lat ? donorCoords.lat : nagpurLat + (Math.random() - 0.5) * 0.02;
-    const donorLng = donorCoords && donorCoords.lng ? donorCoords.lng : nagpurLng + (Math.random() - 0.5) * 0.02;
-    const ngoLat = ngoCoords && ngoCoords.lat ? ngoCoords.lat : nagpurLat + (Math.random() - 0.5) * 0.02;
-    const ngoLng = ngoCoords && ngoCoords.lng ? ngoCoords.lng : nagpurLng + (Math.random() - 0.5) * 0.02;
+    if (donorCoords && donorCoords.lat && donorCoords.lng) {
+        donorLat = donorCoords.lat;
+        donorLng = donorCoords.lng;
+    } else {
+        donorLat = null;
+        donorLng = null;
+    }
+    
+    if (ngoCoords && ngoCoords.lat && ngoCoords.lng) {
+        ngoLat = ngoCoords.lat;
+        ngoLng = ngoCoords.lng;
+    } else {
+        ngoLat = null;
+        ngoLng = null;
+    }
+    
+    // If both are missing, use Maharashtra center as last resort
+    if (!donorLat && !ngoLat) {
+        donorLat = 19.7515;
+        donorLng = 75.7139;
+        ngoLat = 19.7515;
+        ngoLng = 75.7139;
+    } else if (!donorLat && ngoLat) {
+        // If only donor missing, use NGO location with small offset
+        donorLat = ngoLat + (Math.random() - 0.5) * 0.02;
+        donorLng = ngoLng + (Math.random() - 0.5) * 0.02;
+    } else if (donorLat && !ngoLat) {
+        // If only NGO missing, use donor location with small offset
+        ngoLat = donorLat + (Math.random() - 0.5) * 0.02;
+        ngoLng = donorLng + (Math.random() - 0.5) * 0.02;
+    }
     
     const map = L.map('liveMap').setView([donorLat, donorLng], 13);
     
@@ -154,9 +180,9 @@ async function loadVolunteerLocation(assignmentId) {
         const location = await response.json();
         
         if (location) {
-            // Use default coordinates if location coordinates are null
-            const lat = location.lat || 21.1458;
-            const lng = location.lng || 79.0882;
+            // Use actual coordinates from location, or Maharashtra center as fallback
+            const lat = location.lat || 19.7515;
+            const lng = location.lng || 75.7139;
             
             if (!currentMap) {
                 // Initialize map first time

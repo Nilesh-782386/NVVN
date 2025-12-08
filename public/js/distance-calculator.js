@@ -49,12 +49,12 @@ async function getSavedVolunteerLocation() {
             console.log('📍 Got saved volunteer location:', data.location);
             return data.location;
         } else {
-            console.log('❌ No saved location found, using fallback');
-            return { lat: 20.5937, lng: 78.9629 }; // Fallback to Nagpur, Maharashtra
+            console.log('❌ No saved location found, using Maharashtra center fallback');
+            return { lat: 19.7515, lng: 75.7139 }; // Fallback to Maharashtra center
         }
     } catch (error) {
         console.log('❌ Error getting saved location:', error);
-        return { lat: 20.5937, lng: 78.9629 }; // Fallback to Nagpur, Maharashtra
+        return { lat: 19.7515, lng: 75.7139 }; // Fallback to Maharashtra center
     }
 }
 
@@ -99,9 +99,9 @@ async function calculateAllDistances() {
     console.log('📍 Volunteer location:', volunteerLocation);
     
     if (!volunteerLocation || volunteerLocation.lat === 0) {
-        console.log('❌ No volunteer location available, using fallback location');
-        // Use a fallback location (Nagar, Maharashtra)
-        volunteerLocation = { lat: 20.5937, lng: 78.9629 };
+        console.log('❌ No volunteer location available, using Maharashtra center fallback');
+        // Use Maharashtra center as fallback
+        volunteerLocation = { lat: 19.7515, lng: 75.7139 };
     }
     
     // Calculate distance for each donation card

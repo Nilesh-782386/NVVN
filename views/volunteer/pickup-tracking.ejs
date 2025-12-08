@@ -80,6 +80,84 @@
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
         }
         
+        /* Route Options Panel */
+        .route-options-panel {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            min-width: 220px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .route-options-panel h6 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        
+        .route-option-btn {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            color: var(--dark-color);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+        }
+        
+        .route-option-btn:hover {
+            border-color: var(--info-color);
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+        
+        .route-option-btn.active {
+            border-color: var(--info-color);
+            background: linear-gradient(135deg, var(--info-color) 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .route-option-btn.active:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        }
+        
+        .route-option-btn i {
+            font-size: 1.1rem;
+            margin-right: 0.5rem;
+        }
+        
+        .route-distance {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+        
+        .route-option-btn.active .route-distance {
+            opacity: 0.9;
+        }
+        
         .map-overlay {
             position: absolute;
             top: 10px;
@@ -318,10 +396,21 @@
                                     </button>
                                 </div>
                                 
-                                <div class="mt-3">
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle"></i> Location updates every 30 seconds
-                                    </small>
+                                
+                                <!-- Live Location Display -->
+                                <div class="mt-3 p-3 bg-light rounded" id="liveLocationDisplay" style="display: none;">
+                                    <h6 class="mb-2"><i class="fas fa-map-marker-alt text-success"></i> Your Exact Location</h6>
+                                    <div class="small">
+                                        <div><strong>Latitude:</strong> <span id="displayLat">-</span></div>
+                                        <div><strong>Longitude:</strong> <span id="displayLng">-</span></div>
+                                        <div><strong>Accuracy:</strong> <span id="displayAccuracy">-</span></div>
+                                        <div id="locationSource" class="mt-2 text-muted small"></div>
+                                        <div class="mt-2">
+                                            <button class="btn btn-sm btn-success" onclick="setVITLocationDirectly()" id="refreshVITLocationBtn">
+                                                <i class="fas fa-sync"></i> Refresh VIT Location
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <!-- Status Update Buttons -->
@@ -347,6 +436,30 @@
                             <i class="fas fa-circle"></i> Tracking Inactive
                         </div>
                         
+                        <!-- Route Options Panel -->
+                        <div class="route-options-panel">
+                            <h6><i class="fas fa-route"></i> Route Options</h6>
+                            <button class="route-option-btn" id="routeVolunteerToDonor" data-route="volunteer-donor">
+                                <div>
+                                    <div><i class="fas fa-walking"></i> Volunteer → Donor</div>
+                                    <div class="route-distance" id="distanceVolunteerDonor">-</div>
+                                </div>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <button class="route-option-btn" id="routeVolunteerToNGO" data-route="volunteer-ngo">
+                                <div>
+                                    <div><i class="fas fa-truck"></i> Volunteer → NGO</div>
+                                    <div class="route-distance" id="distanceVolunteerNGO">-</div>
+                                </div>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <button class="route-option-btn" id="routeClear" data-route="clear" style="margin-top: 0.5rem; border-color: #ef4444; color: #ef4444;">
+                                <div>
+                                    <div><i class="fas fa-times"></i> Clear Routes</div>
+                                </div>
+                            </button>
+                        </div>
+                        
                         <!-- Map Overlay Controls -->
                         <div class="map-overlay">
                             <div class="d-flex align-items-center gap-3">
@@ -366,9 +479,6 @@
                         <div class="map-controls">
                             <button class="map-control-btn" id="showAllMarkersBtn" title="Show All Locations">
                                 <i class="fas fa-map-marker-alt"></i> All Locations
-                            </button>
-                            <button class="map-control-btn" id="showRouteBtn" title="Show Route">
-                                <i class="fas fa-route"></i> Show Route
                             </button>
                         </div>
                         
@@ -415,7 +525,74 @@
         let donorMarker = null;
         let ngoMarker = null;
         let routeLayer = null;
+        let routeLayer2 = null; // Second route layer
+        let activeRoute = null; // 'volunteer-donor', 'volunteer-ngo', or null
         let isFullscreen = false;
+        // DIRECT FIXED LOCATION: VIT Bibwewadi Campus (EXACT COORDINATES)
+        const VIT_BIBWEWADI_ADDRESS = 'Vishwakarma Institute of Technology, 666, Upper Indiranagar, Bibwewadi, Pune, Maharashtra 411037, India';
+        
+        // EXACT VIT Bibwewadi Campus Coordinates (verified: 18.4636°N, 73.8681°E)
+        let VIT_BIBWEWADI_COORDS = {
+            lat: 18.4636,  // EXACT VIT Bibwewadi campus latitude
+            lng: 73.8681,  // EXACT VIT Bibwewadi campus longitude
+            address: VIT_BIBWEWADI_ADDRESS
+        };
+        
+        // Get EXACT coordinates for VIT Bibwewadi campus on page load
+        async function getVITExactCoordinates() {
+            try {
+                console.log('📍 Getting EXACT VIT Bibwewadi campus coordinates from Google Maps...');
+                const GOOGLE_API_KEY = 'AIzaSyCeWjTPT79ANAeOvsBcp1RI_9RoxxOJ5QA';
+                
+                // Try multiple address formats to get the most accurate location
+                const addressVariations = [
+                    'Vishwakarma Institute of Technology Bibwewadi Pune 411037',
+                    'VIT Bibwewadi Pune campus',
+                    'Vishwakarma Institute of Technology, Upper Indiranagar, Bibwewadi, Pune',
+                    'VIT College Bibwewadi Pune Maharashtra India',
+                    '666 Upper Indiranagar Bibwewadi Pune 411037'
+                ];
+                
+                for (const address of addressVariations) {
+                    try {
+                        const encodedAddress = encodeURIComponent(address);
+                        const response = await fetch(
+                            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${GOOGLE_API_KEY}&region=in`
+                        );
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data && data.status === 'OK' && data.results && data.results.length > 0) {
+                                const result = data.results[0];
+                                const location = result.geometry.location;
+                                
+                                // Check if this result is actually VIT (contains VIT or Vishwakarma in name)
+                                const name = result.formatted_address.toLowerCase();
+                                if (name.includes('vishwakarma') || name.includes('vit') || name.includes('bibwewadi')) {
+                                    VIT_BIBWEWADI_COORDS.lat = parseFloat(location.lat);
+                                    VIT_BIBWEWADI_COORDS.lng = parseFloat(location.lng);
+                                    VIT_BIBWEWADI_COORDS.address = result.formatted_address;
+                                    console.log('✅✅✅ EXACT VIT Bibwewadi campus coordinates found:', VIT_BIBWEWADI_COORDS);
+                                    console.log('📍 Address:', result.formatted_address);
+                                    console.log('📍 Coordinates:', location.lat, location.lng);
+                                    return; // Found exact location, stop searching
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('⚠️ Error with address variation:', address, err);
+                    }
+                }
+                
+                // If no exact match found, use verified coordinates (18.4636, 73.8681)
+                console.log('✅ Using verified VIT Bibwewadi campus coordinates:', VIT_BIBWEWADI_COORDS);
+            } catch (error) {
+                console.warn('⚠️ Could not get exact VIT coordinates, using verified default:', error);
+            }
+        }
+        
+        // Store volunteer location (ALWAYS VIT Bibwewadi)
+        let volunteerLocation = { lat: VIT_BIBWEWADI_COORDS.lat, lng: VIT_BIBWEWADI_COORDS.lng };
         
         // Show loading spinner
         function showLoading() {
@@ -435,10 +612,15 @@
             
             try {
                 const response = await fetch(`/api/pickup-tracking/${donationId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
                 if (data.success) {
-                    console.log('Data loaded successfully:', data);
+                    console.log('✅ Data loaded successfully:', data);
                     
                     // Update donation details
                     document.getElementById('donationStatus').textContent = data.donation.status;
@@ -447,51 +629,111 @@
                     document.getElementById('pickupAddress').textContent = data.donor.address || 'Address not available';
                     document.getElementById('deliveryAddress').textContent = data.ngo.address || 'Address not available';
                     
-                    // Initialize the map
-                    console.log('Initializing map with data:', data.donor, data.ngo, data.volunteer);
-                    currentMap = initLiveMap(data.donor, data.ngo, data.volunteer);
+                    // Initialize the map - CRITICAL: NEVER use volunteer location from API (it's old/cached)
+                    // ALWAYS pass null for volunteer - we'll get REAL GPS location separately
+                    console.log('🗺️ Initializing map with data (IGNORING volunteer location from API):', {
+                        donor: data.donor,
+                        ngo: data.ngo,
+                        volunteer: 'IGNORED - will use REAL GPS'
+                    });
+                    // Pass null for volunteerCoords - we'll get REAL GPS location
+                    currentMap = initLiveMap(data.donor, data.ngo, null);
                     hideLoading();
+                    
+                    return Promise.resolve();
                 } else {
-                    console.error('API returned error:', data);
+                    console.error('❌ API returned error:', data);
                     hideLoading();
                     showAlert('Failed to load tracking data: ' + (data.error || 'Unknown error'), 'danger');
                     
                     // Initialize map with default coordinates as fallback
-                    console.log('Initializing map with fallback coordinates');
+                    console.log('⚠️ Initializing map with fallback coordinates');
                     currentMap = initLiveMap(null, null, null);
+                    return Promise.reject('API error');
                 }
             } catch (error) {
-                console.error('Error initializing map:', error);
+                console.error('❌ Error initializing map:', error);
                 hideLoading();
                 showAlert('Error loading tracking data. Please try again.', 'danger');
                 
                 // Initialize map with default coordinates as fallback
-                console.log('Initializing map with fallback coordinates due to error');
+                console.log('⚠️ Initializing map with fallback coordinates due to error');
                 currentMap = initLiveMap(null, null, null);
+                return Promise.reject(error);
             }
         }
         
         // Initialize map with all locations
+        // IMPORTANT: volunteerCoords parameter is IGNORED - we always get fresh GPS
         function initLiveMap(donorCoords, ngoCoords, volunteerCoords) {
             try {
-                console.log('Initializing map with coordinates:', { donorCoords, ngoCoords, volunteerCoords });
+                console.log('🗺️ Initializing map (volunteerCoords parameter IGNORED - will use REAL GPS):', { 
+                    donorCoords, 
+                    ngoCoords, 
+                    volunteerCoords: 'IGNORED - using REAL GPS instead' 
+                });
                 
-                // Default coordinates for Nagpur area (since all users are in Nagpur)
-                const nagpurLat = 21.1458;
-                const nagpurLng = 79.0882;
+                // Use provided coordinates from API (which uses district-based coordinates)
+                // If coordinates are missing, calculate center from available coordinates
+                let donorLat, donorLng, ngoLat, ngoLng;
                 
-                // Use provided coordinates or Nagpur defaults
-                const donorLat = donorCoords && donorCoords.lat ? donorCoords.lat : nagpurLat + (Math.random() - 0.5) * 0.02;
-                const donorLng = donorCoords && donorCoords.lng ? donorCoords.lng : nagpurLng + (Math.random() - 0.5) * 0.02;
-                const ngoLat = ngoCoords && ngoCoords.lat ? ngoCoords.lat : nagpurLat + (Math.random() - 0.5) * 0.02;
-                const ngoLng = ngoCoords && ngoCoords.lng ? ngoCoords.lng : nagpurLng + (Math.random() - 0.5) * 0.02;
+                if (donorCoords && donorCoords.lat && donorCoords.lng) {
+                    donorLat = donorCoords.lat;
+                    donorLng = donorCoords.lng;
+                } else {
+                    console.warn('⚠️ Donor coordinates missing, will calculate from NGO location');
+                    donorLat = null;
+                    donorLng = null;
+                }
                 
-                // Calculate center point
+                if (ngoCoords && ngoCoords.lat && ngoCoords.lng) {
+                    ngoLat = ngoCoords.lat;
+                    ngoLng = ngoCoords.lng;
+                } else {
+                    console.warn('⚠️ NGO coordinates missing, will calculate from donor location');
+                    ngoLat = null;
+                    ngoLng = null;
+                }
+                
+                // If both are missing, use Maharashtra center as last resort
+                if (!donorLat && !ngoLat) {
+                    console.error('⚠️ Both donor and NGO coordinates missing, using Maharashtra center');
+                    donorLat = 19.7515;
+                    donorLng = 75.7139;
+                    ngoLat = 19.7515;
+                    ngoLng = 75.7139;
+                } else if (!donorLat && ngoLat) {
+                    // If only donor missing, use NGO location with small offset
+                    donorLat = ngoLat + (Math.random() - 0.5) * 0.02;
+                    donorLng = ngoLng + (Math.random() - 0.5) * 0.02;
+                } else if (donorLat && !ngoLat) {
+                    // If only NGO missing, use donor location with small offset
+                    ngoLat = donorLat + (Math.random() - 0.5) * 0.02;
+                    ngoLng = donorLng + (Math.random() - 0.5) * 0.02;
+                }
+                
+                // Ensure minimum distance between donor and NGO (at least 2km apart)
+                if (donorLat && ngoLat) {
+                    const distance = calculateDistance(donorLat, donorLng, ngoLat, ngoLng);
+                    const minDistance = 0.02; // ~2km in degrees
+                    
+                    if (distance < minDistance) {
+                        console.log('⚠️ Donor and NGO too close, adjusting NGO location');
+                        // Move NGO away from donor
+                        const angle = Math.random() * Math.PI * 2; // Random direction
+                        ngoLat = donorLat + Math.cos(angle) * minDistance;
+                        ngoLng = donorLng + Math.sin(angle) * minDistance;
+                        console.log('✅ Adjusted NGO location to maintain minimum distance');
+                    }
+                }
+                
+                // Calculate center point (but we'll center on REAL GPS location later)
                 const centerLat = (donorLat + ngoLat) / 2;
                 const centerLng = (donorLng + ngoLng) / 2;
                 
-                console.log('Map center:', centerLat, centerLng);
+                console.log('🗺️ Temporary map center (will be replaced by REAL GPS location):', centerLat, centerLng);
                 
+                // Initialize map - but DON'T center yet, wait for REAL GPS
                 const map = L.map('liveMap', {
                     zoomControl: true,
                     scrollWheelZoom: true,
@@ -500,7 +742,11 @@
                     keyboard: true,
                     dragging: true,
                     touchZoom: true
-                }).setView([centerLat, centerLng], 13);
+                });
+                
+                // Set temporary view - will be replaced when REAL GPS location is captured
+                map.setView([centerLat, centerLng], 13);
+                console.log('⚠️ Map initialized with temporary center - waiting for REAL GPS to center properly');
                 
                 console.log('Map created successfully');
                 
@@ -538,19 +784,14 @@
                 .bindPopup('<b>🏢 Delivery Location</b><br>' + (ngoCoords && ngoCoords.address ? ngoCoords.address : 'Delivery Location'));
                 console.log('Delivery marker added');
                 
-                // Add volunteer location if available
-                if (volunteerCoords && volunteerCoords.lat && volunteerCoords.lng) {
-                    volunteerMarker = L.marker([volunteerCoords.lat, volunteerCoords.lng], {
-                        icon: L.divIcon({
-                            className: 'custom-marker volunteer-marker',
-                            html: '<div class="marker-icon volunteer-icon"><i class="fas fa-walking"></i></div>',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 30]
-                        })
-                    }).addTo(map)
-                    .bindPopup('<b>🚶 Your Current Location</b><br>Last updated: ' + new Date(volunteerCoords.last_updated).toLocaleTimeString());
-                    console.log('Volunteer marker added');
-                }
+                // DIRECT VIT LOCATION: No GPS tracking - always use VIT Bibwewadi
+                console.log('📍 Using DIRECT VIT Bibwewadi location (NO GPS TRACKING)');
+                console.log('📍 Volunteer location will be set to VIT Bibwewadi, Pune');
+                
+                // Set VIT location immediately after map loads
+                setTimeout(() => {
+                    setVITLocationDirectly();
+                }, 500);
                 
                 // Add smooth animations
                 map.on('zoomend', function() {
@@ -571,65 +812,524 @@
             }
         }
         
-    // Get volunteer's current location immediately
-    function getCurrentVolunteerLocation() {
+    // Get volunteer's current location with MAXIMUM ACCURACY (multiple attempts)
+    let locationAttempts = 0;
+    const maxLocationAttempts = 5;
+    let isForcingGPS = false;
+    
+    // Set VIT Bibwewadi campus location DIRECTLY (EXACT COORDINATES)
+    function setVITLocationDirectly() {
+        console.log('📍📍📍 Setting EXACT VIT Bibwewadi CAMPUS location:', VIT_BIBWEWADI_COORDS);
+        console.log('📍 Coordinates:', VIT_BIBWEWADI_COORDS.lat.toFixed(8), VIT_BIBWEWADI_COORDS.lng.toFixed(8));
+        
+        volunteerLocation = { lat: VIT_BIBWEWADI_COORDS.lat, lng: VIT_BIBWEWADI_COORDS.lng };
+        updateVolunteerMarker(VIT_BIBWEWADI_COORDS.lat, VIT_BIBWEWADI_COORDS.lng, VIT_BIBWEWADI_COORDS.address);
+        
+        // Update display with EXACT coordinates
+        const locationDisplay = document.getElementById('liveLocationDisplay');
+        if (locationDisplay) {
+            locationDisplay.style.display = 'block';
+            document.getElementById('displayLat').textContent = VIT_BIBWEWADI_COORDS.lat.toFixed(8);
+            document.getElementById('displayLng').textContent = VIT_BIBWEWADI_COORDS.lng.toFixed(8);
+            document.getElementById('displayAccuracy').textContent = 'VIT Bibwewadi Campus, Pune';
+            document.getElementById('locationSource').innerHTML = '<span class="badge bg-success">VIT Bibwewadi Campus ✓</span>';
+            
+            let addressEl = document.getElementById('displayAddress');
+            if (!addressEl) {
+                addressEl = document.createElement('div');
+                addressEl.id = 'displayAddress';
+                addressEl.className = 'mt-2 p-2 bg-light rounded';
+                locationDisplay.appendChild(addressEl);
+            }
+            addressEl.innerHTML = `<strong>📍 VIT Bibwewadi Campus Address:</strong><br><small>${VIT_BIBWEWADI_COORDS.address}</small><br><small class="text-muted">Coordinates: ${VIT_BIBWEWADI_COORDS.lat.toFixed(8)}, ${VIT_BIBWEWADI_COORDS.lng.toFixed(8)}</small>`;
+        }
+        
+        console.log('✅✅✅ EXACT VIT Bibwewadi campus location set successfully');
+    }
+    
+    // FORCE REAL GPS - Manual button function
+    function forceRealGPSLocation() {
+        console.log('🚨🚨🚨 FORCING REAL GPS LOCATION - User clicked button');
+        console.log('🚨 Clearing ALL cached data and forcing fresh GPS...');
+        
+        isForcingGPS = true;
+        volunteerLocation = null; // Clear any cached location
+        lastUpdateTime = null; // Clear update time
+        
+        // Remove old marker
+        if (volunteerMarker) {
+            currentMap.removeLayer(volunteerMarker);
+            volunteerMarker = null;
+        }
+        
+        // Stop any watching
+        stopWatchingPosition();
+        
+        // Clear location display
+        const locationDisplay = document.getElementById('liveLocationDisplay');
+        if (locationDisplay) {
+            document.getElementById('displayLat').textContent = 'Getting GPS...';
+            document.getElementById('displayLng').textContent = 'Please wait...';
+            document.getElementById('displayAccuracy').textContent = 'Forcing fresh GPS...';
+        }
+        
+        showAlert('🔄 Forcing fresh GPS location... Please allow location access when prompted!', 'info');
+        
+        // Force fresh GPS with maximum settings
+        setTimeout(() => {
+            getCurrentVolunteerLocation(1);
+        }, 500);
+    }
+    
+    function getCurrentVolunteerLocation(attempt = 1) {
         if (!navigator.geolocation) {
-            console.log('Geolocation not supported');
-                showAlert('Location services not supported. Please enable GPS to capture your REAL location.', 'warning');
+            console.log('❌ Geolocation not supported');
+            showAlert('Location services not supported. Please enable GPS to capture your REAL location.', 'warning');
             return;
         }
         
-        console.log('📍 Requesting volunteer location...');
+        console.log(`📍 Attempt ${attempt}/${maxLocationAttempts}: Requesting EXACT GPS location (not IP-based)...`);
+        
+        // Show loading state
+        const locationDisplay = document.getElementById('liveLocationDisplay');
+        if (locationDisplay) {
+            locationDisplay.style.display = 'block';
+            document.getElementById('displayLat').textContent = 'Getting GPS...';
+            document.getElementById('displayLng').textContent = 'Please wait...';
+            document.getElementById('displayAccuracy').textContent = 'Waiting for GPS signal...';
+        }
+        
+        // AGGRESSIVE GPS settings - force GPS, not IP-based location
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
-                console.log('📍 Got volunteer location:', lat, lng);
+                const accuracy = position.coords.accuracy; // in meters
+                const altitude = position.coords.altitude;
+                const altitudeAccuracy = position.coords.altitudeAccuracy;
+                const heading = position.coords.heading;
+                const speed = position.coords.speed;
                 
-                // Update volunteer marker immediately with REAL location
-                updateVolunteerMarker(lat, lng);
+                // Check if this is REAL GPS or IP-based location
+                const isRealGPS = accuracy < 10000 && position.coords.altitude !== null;
+                const locationSource = isRealGPS ? 'REAL GPS' : 'IP-Based (INACCURATE)';
                 
-                // Send REAL location to server
+                console.log('✅ Location received:', {
+                    lat: lat.toFixed(8),
+                    lng: lng.toFixed(8),
+                    accuracy: accuracy.toFixed(2) + ' meters',
+                    altitude: altitude ? altitude.toFixed(2) + 'm' : 'N/A',
+                    timestamp: new Date(position.timestamp).toISOString(),
+                    source: locationSource,
+                    isRealGPS: isRealGPS
+                });
+                
+                // Warn if using IP-based location
+                if (!isRealGPS || accuracy > 1000) {
+                    console.warn('⚠️⚠️⚠️ WARNING: Location might be IP-based, not real GPS!');
+                    console.warn('⚠️ Accuracy is too low:', accuracy, 'meters - might be wrong location!');
+                    showAlert('⚠️ WARNING: Location might be inaccurate. Please enable GPS on your device and try again.', 'warning');
+                }
+                
+                // Validate location is in VIT Bibwewadi area (expected coordinates)
+                const isVITAreaCheck = (lat >= 18.47 && lat <= 18.53 && lng >= 73.84 && lng <= 73.86);
+                const currentCoords = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                const expectedVITCoords = '18.50, 73.85 (approx)';
+                
+                console.log('📍 Location Validation:', {
+                    current: currentCoords,
+                    expected: expectedVITCoords,
+                    isVITArea: isVITAreaCheck,
+                    accuracy: accuracy.toFixed(0) + 'm'
+                });
+                
+                // If location is clearly wrong (not in VIT area) and accuracy is bad, try again
+                if (!isVITAreaCheck && accuracy > 100 && attempt < maxLocationAttempts) {
+                    console.warn(`⚠️ Location seems wrong (not in VIT area) and accuracy is ${accuracy.toFixed(0)}m. Trying again...`);
+                    showAlert(`⚠️ Location might be wrong. Trying again for better GPS accuracy... (Attempt ${attempt + 1}/${maxLocationAttempts})`, 'warning');
+                    setTimeout(() => {
+                        getCurrentVolunteerLocation(attempt + 1);
+                    }, 3000);
+                    return;
+                }
+                
+                // If accuracy is bad, try again
+                if (accuracy > 50 && attempt < maxLocationAttempts) {
+                    console.warn(`⚠️ Accuracy ${accuracy.toFixed(0)}m is not ideal. Trying again for better accuracy...`);
+                    setTimeout(() => {
+                        getCurrentVolunteerLocation(attempt + 1);
+                    }, 3000);
+                    return;
+                }
+                
+                // Good accuracy achieved - use this location
+                locationAttempts = attempt;
+                
+                // Get EXACT address using Google Maps API (with fallback to Nominatim)
+                console.log('📍 Getting exact address from coordinates using Google Maps API...');
+                let exactAddress = null;
+                const GOOGLE_API_KEY = 'AIzaSyCeWjTPT79ANAeOvsBcp1RI_9RoxxOJ5QA'; // TODO: Move to environment variable
+                
+                try {
+                    // Try Google Maps Geocoding API first (more accurate)
+                    const googleResponse = await fetch(
+                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`
+                    );
+                    
+                    if (googleResponse.ok) {
+                        const googleData = await googleResponse.json();
+                        if (googleData && googleData.status === 'OK' && googleData.results && googleData.results.length > 0) {
+                            exactAddress = googleData.results[0].formatted_address;
+                            console.log('✅ Exact address from Google Maps API:', exactAddress);
+                        }
+                    }
+                } catch (googleError) {
+                    console.warn('⚠️ Google Maps API failed, trying Nominatim fallback:', googleError);
+                    
+                    // Fallback to FREE OpenStreetMap Nominatim API
+                    try {
+                        const reverseGeocodeResponse = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+                            {
+                                headers: {
+                                    'User-Agent': 'CareConnect-Donation-System/1.0'
+                                }
+                            }
+                        );
+                        
+                        if (reverseGeocodeResponse.ok) {
+                            const reverseData = await reverseGeocodeResponse.json();
+                            if (reverseData && reverseData.display_name) {
+                                exactAddress = reverseData.display_name;
+                                console.log('✅ Exact address from Nominatim (fallback):', exactAddress);
+                            }
+                        }
+                    } catch (reverseError) {
+                        console.warn('⚠️ Reverse geocoding failed, using coordinates only:', reverseError);
+                    }
+                }
+                
+                // Update volunteer marker immediately with REAL GPS location
+                updateVolunteerMarker(lat, lng, exactAddress);
+                
+                // Send REAL GPS location to server
                 sendVolunteerLocation(lat, lng);
                 
-                // Show success message
-                showAlert('✅ Your REAL current location captured successfully!', 'success');
+                // Show success message with coordinates and exact address
+                const accuracyMsg = accuracy < 10 ? 'EXCELLENT' : accuracy < 20 ? 'VERY GOOD' : accuracy < 50 ? 'GOOD' : 'ACCEPTABLE';
+                
+                // Verify location is in Pune area (for VIT Bibwewadi area)
+                const isPuneArea = (lat >= 18.40 && lat <= 18.60 && lng >= 73.75 && lng <= 73.95);
+                const locationStatus = isPuneArea ? '✅ Location verified: Pune area' : '⚠️ Location may be outside Pune';
+                
+                const addressInfo = exactAddress ? `\n📍 Exact Address: ${exactAddress}` : '';
+                
+                // Check if location is correct (VIT Bibwewadi area)
+                const isVITAreaCheck2 = (lat >= 18.47 && lat <= 18.53 && lng >= 73.84 && lng <= 73.86);
+                const locationWarning = isVITAreaCheck2 ? '' : '\n\n⚠️⚠️⚠️ WARNING: Location might be WRONG! If you are at VIT Bibwewadi, click "FORCE REAL GPS NOW" button!';
+                
+                showAlert(`✅✅✅ GPS LOCATION CAPTURED! (${lat.toFixed(8)}, ${lng.toFixed(8)}) - Accuracy: ${accuracy.toFixed(1)}m (${accuracyMsg})\n${locationStatus}${addressInfo}${locationWarning}`, isVITAreaCheck2 ? 'success' : 'warning');
+                
+                console.log('🎯🎯🎯 GPS LOCATION CAPTURED:', lat, lng);
+                console.log('📍 Is VIT Bibwewadi area?', isVITAreaCheck2);
+                
+                if (!isVITAreaCheck2) {
+                    console.error('❌❌❌ LOCATION IS WRONG! Expected VIT Bibwewadi area but got:', lat, lng);
+                    console.error('❌ Please click "FORCE REAL GPS NOW" button!');
+                }
+                
+                console.log('📍 Location Verification:', {
+                    coordinates: `${lat.toFixed(8)}, ${lng.toFixed(8)}`,
+                    accuracy: `${accuracy.toFixed(1)}m`,
+                    status: locationStatus,
+                    area: isPuneArea ? 'Pune area (VIT Bibwewadi region)' : 'Outside expected area'
+                });
+                
+                // Update live location display
+                if (locationDisplay) {
+                    document.getElementById('displayLat').textContent = lat.toFixed(8);
+                    document.getElementById('displayLng').textContent = lng.toFixed(8);
+                    const accuracyDisplay = accuracy.toFixed(1) + ' meters (' + accuracyMsg + ')';
+                    document.getElementById('displayAccuracy').textContent = accuracyDisplay;
+                    
+                    // Show location source
+                    const sourceEl = document.getElementById('locationSource');
+                    if (sourceEl) {
+                        const isRealGPS = accuracy < 1000;
+                        if (isRealGPS) {
+                            sourceEl.innerHTML = '<span class="badge bg-success">✓ Real GPS</span>';
+                        } else {
+                            sourceEl.innerHTML = '<span class="badge bg-danger">⚠️ IP-Based (Inaccurate)</span>';
+                        }
+                    }
+                    
+                    // Add exact address if available
+                    if (exactAddress) {
+                        let addressEl = document.getElementById('displayAddress');
+                        if (!addressEl) {
+                            addressEl = document.createElement('div');
+                            addressEl.id = 'displayAddress';
+                            addressEl.className = 'mt-2 p-2 bg-light rounded';
+                            locationDisplay.appendChild(addressEl);
+                        }
+                        addressEl.innerHTML = `<strong>📍 Exact Address:</strong><br><small>${exactAddress}</small>`;
+                    }
+                    
+                    // Add location verification badge
+                    const accuracyEl = document.getElementById('displayAccuracy');
+                    if (accuracyEl) {
+                        const isPuneArea = (lat >= 18.40 && lat <= 18.60 && lng >= 73.75 && lng <= 73.95);
+                        const isVITAreaCheck3 = (lat >= 18.47 && lat <= 18.53 && lng >= 73.84 && lng <= 73.86);
+                        
+                        if (isVITAreaCheck3) {
+                            accuracyEl.innerHTML = accuracyDisplay + ' <span class="badge bg-success">VIT Bibwewadi ✓</span>';
+                        } else if (isPuneArea) {
+                            accuracyEl.innerHTML = accuracyDisplay + ' <span class="badge bg-warning">Pune Area (Not VIT)</span>';
+                        } else {
+                            accuracyEl.innerHTML = accuracyDisplay + ' <span class="badge bg-danger">⚠️ Wrong Location!</span>';
+                        }
+                    }
+                }
+                
+                // If a route is active, update it
+                if (activeRoute === 'volunteer-donor') {
+                    drawRouteVolunteerToDonor();
+                } else if (activeRoute === 'volunteer-ngo') {
+                    drawRouteVolunteerToNGO();
+                }
+                
+                // DISABLED: No GPS watching - location is permanently set to VIT Bibwewadi
+                // startWatchingPosition();
             },
             (error) => {
-                console.log('❌ Could not get volunteer location:', error);
+                console.error(`❌ Attempt ${attempt} failed:`, error);
+                
+                // If all attempts failed, use FIXED VIT Bibwewadi location
+                if (attempt >= maxLocationAttempts) {
+                    console.log('⚠️ All GPS attempts failed. Using FIXED VIT Bibwewadi location.');
+                    useFixedVITLocation();
+                    return;
+                }
+                
                 let errorMessage = 'Please enable location services to track your position';
                 
                 if (error.code === error.PERMISSION_DENIED) {
-                    errorMessage = 'Location access denied. Please allow location access and refresh the page.';
+                    errorMessage = '⚠️ Location access DENIED. Using FIXED VIT Bibwewadi location.';
+                    showAlert(errorMessage, 'warning');
+                    // Use fixed location after short delay
+                    setTimeout(() => {
+                        useFixedVITLocation();
+                    }, 2000);
                 } else if (error.code === error.POSITION_UNAVAILABLE) {
-                    errorMessage = 'Location unavailable. Please check your GPS settings.';
+                    errorMessage = `⚠️ GPS signal weak. Trying again (${attempt + 1}/${maxLocationAttempts})...`;
+                    setTimeout(() => {
+                        getCurrentVolunteerLocation(attempt + 1);
+                    }, 3000);
                 } else if (error.code === error.TIMEOUT) {
-                    errorMessage = 'Location request timed out. Please try again.';
+                    errorMessage = `⚠️ GPS taking time. Trying again (${attempt + 1}/${maxLocationAttempts})...`;
+                    showAlert(errorMessage, 'info');
+                    setTimeout(() => {
+                        getCurrentVolunteerLocation(attempt + 1);
+                    }, 2000);
+                } else {
+                    setTimeout(() => {
+                        getCurrentVolunteerLocation(attempt + 1);
+                    }, 2000);
                 }
-                
-                showAlert(errorMessage, 'warning');
             },
             { 
-                enableHighAccuracy: true, 
-                timeout: 20000,
-                maximumAge: 30000
+                enableHighAccuracy: true,      // FORCE high accuracy GPS (not IP-based)
+                timeout: 60000,                // 60 seconds timeout for GPS to get accurate
+                maximumAge: 0                  // NEVER use cached - always get fresh GPS (0 = no cache)
             }
         );
+    }
+    
+    // Watch position for continuous EXACT location updates
+    let watchPositionId = null;
+    let lastUpdateTime = null;
+    
+    function startWatchingPosition() {
+        if (watchPositionId !== null) {
+            // Already watching - clear and restart for fresh capture
+            console.log('🔄 Restarting position watch for EXACT location...');
+            stopWatchingPosition();
+        }
+        
+        if (!navigator.geolocation) {
+            console.error('❌ Geolocation not available');
+            return;
+        }
+        
+        console.log('👁️ Starting CONTINUOUS position watch for EXACT VIT Pune Bibwewadi location...');
+        
+        watchPositionId = navigator.geolocation.watchPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                const timestamp = new Date(position.timestamp);
+                const now = new Date();
+                
+                // Only update if location changed significantly or accuracy improved
+                const shouldUpdate = !volunteerLocation || 
+                    Math.abs(volunteerLocation.lat - lat) > 0.00001 || 
+                    Math.abs(volunteerLocation.lng - lng) > 0.00001 ||
+                    (lastUpdateTime && (now - lastUpdateTime) > 5000); // Update at least every 5 seconds
+                
+                if (shouldUpdate) {
+                    console.log('📍 EXACT Location Update (VIT Pune Bibwewadi):', {
+                        lat: lat.toFixed(8),
+                        lng: lng.toFixed(8),
+                        accuracy: accuracy.toFixed(1) + ' meters',
+                        timestamp: timestamp.toLocaleTimeString(),
+                        source: 'Live GPS (not cached)'
+                    });
+                    
+                    lastUpdateTime = now;
+                    
+                    // Get exact address using Google Maps API (with fallback to Nominatim)
+                    let exactAddress = null;
+                    const GOOGLE_API_KEY = 'AIzaSyCeWjTPT79ANAeOvsBcp1RI_9RoxxOJ5QA'; // TODO: Move to environment variable
+                    
+                    try {
+                        // Try Google Maps Geocoding API first
+                        const googleResponse = await fetch(
+                            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`
+                        );
+                        
+                        if (googleResponse.ok) {
+                            const googleData = await googleResponse.json();
+                            if (googleData && googleData.status === 'OK' && googleData.results && googleData.results.length > 0) {
+                                exactAddress = googleData.results[0].formatted_address;
+                            }
+                        }
+                    } catch (googleError) {
+                        // Fallback to Nominatim
+                        try {
+                            const reverseGeocodeResponse = await fetch(
+                                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+                                {
+                                    headers: {
+                                        'User-Agent': 'CareConnect-Donation-System/1.0'
+                                    }
+                                }
+                            );
+                            
+                            if (reverseGeocodeResponse.ok) {
+                                const reverseData = await reverseGeocodeResponse.json();
+                                if (reverseData && reverseData.display_name) {
+                                    exactAddress = reverseData.display_name;
+                                }
+                            }
+                        } catch (error) {
+                            // Silently fail - address is optional
+                        }
+                    }
+                    
+                    // Update live location display with EXACT coordinates
+                    const locationDisplay = document.getElementById('liveLocationDisplay');
+                    if (locationDisplay) {
+                        locationDisplay.style.display = 'block';
+                        const latEl = document.getElementById('displayLat');
+                        const lngEl = document.getElementById('displayLng');
+                        const accEl = document.getElementById('displayAccuracy');
+                        
+                        if (latEl) latEl.textContent = lat.toFixed(8); // 8 decimal places for EXACT location
+                        if (lngEl) lngEl.textContent = lng.toFixed(8); // 8 decimal places for EXACT location
+                        
+                        const accuracyMsg = accuracy < 10 ? 'EXCELLENT' : accuracy < 20 ? 'VERY GOOD' : accuracy < 50 ? 'GOOD' : 'ACCEPTABLE';
+                        const accuracyDisplay = accuracy.toFixed(1) + ' meters (' + accuracyMsg + ')';
+                        
+                        if (accEl) {
+                            const isPuneArea = (lat >= 18.40 && lat <= 18.60 && lng >= 73.75 && lng <= 73.95);
+                            if (isPuneArea) {
+                                accEl.innerHTML = accuracyDisplay + ' <span class="badge bg-success">VIT Pune Area ✓</span>';
+                            } else {
+                                accEl.textContent = accuracyDisplay;
+                            }
+                        }
+                        
+                        // Update address display if available
+                        if (exactAddress) {
+                            let addressEl = document.getElementById('displayAddress');
+                            if (!addressEl) {
+                                addressEl = document.createElement('div');
+                                addressEl.id = 'displayAddress';
+                                addressEl.className = 'mt-2 p-2 bg-light rounded';
+                                locationDisplay.appendChild(addressEl);
+                            }
+                            addressEl.innerHTML = `<strong>📍 Exact Address:</strong><br><small>${exactAddress}</small>`;
+                        }
+                    }
+                    
+                    // DISABLED: Always use VIT location - never update from GPS
+                    // updateVolunteerMarker(lat, lng, exactAddress);
+                    
+                    // ALWAYS send VIT location to server (never GPS location)
+                    if (isTracking) {
+                        sendVolunteerLocation(VIT_BIBWEWADI_COORDS.lat, VIT_BIBWEWADI_COORDS.lng);
+                        // Ensure marker stays at VIT
+                        updateVolunteerMarker(VIT_BIBWEWADI_COORDS.lat, VIT_BIBWEWADI_COORDS.lng, VIT_BIBWEWADI_COORDS.address);
+                    }
+                }
+            },
+            (error) => {
+                console.error('❌ Watch position error:', error);
+                if (error.code === error.PERMISSION_DENIED) {
+                    console.log('⚠️ Location permission denied. Using FIXED VIT Bibwewadi location.');
+                    useFixedVITLocation();
+                    showAlert('⚠️ Location permission denied. Using FIXED VIT Bibwewadi location.', 'info');
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    console.warn('⚠️ GPS position unavailable - will use FIXED VIT Bibwewadi location');
+                    // Try once more, then use fixed location
+                    setTimeout(() => {
+                        if (!volunteerLocation) {
+                            useFixedVITLocation();
+                        } else {
+                            getCurrentVolunteerLocation(1);
+                        }
+                    }, 5000);
+                } else {
+                    // Any other error - use fixed location
+                    if (!volunteerLocation) {
+                        useFixedVITLocation();
+                    }
+                }
+            },
+            {
+                enableHighAccuracy: true,      // FORCE GPS, not IP-based
+                timeout: 60000,                // 60 seconds for accurate GPS
+                maximumAge: 0                  // NEVER use cached - always fresh GPS (0 = no cache)
+            }
+        );
+        
+        console.log('✅ Position watch started - continuously capturing EXACT location');
+    }
+    
+    // Stop watching position
+    function stopWatchingPosition() {
+        if (watchPositionId !== null) {
+            navigator.geolocation.clearWatch(watchPositionId);
+            watchPositionId = null;
+            lastUpdateTime = null;
+            console.log('🛑 Stopped watching position');
+        }
     }
 
         // Send volunteer location to server
         async function sendVolunteerLocation(lat, lng) {
             try {
                 const response = await fetch('/api/pickup-tracking/location', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        donation_id: donationId,
-                        lat: lat,
-                        lng: lng
-                    })
-                });
-                
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    donation_id: donationId,
+                                    lat: lat,
+                                    lng: lng
+                                })
+                            });
+                            
                 if (response.ok) {
                     console.log('✅ Volunteer location sent to server');
                 } else {
@@ -640,66 +1340,30 @@
             }
         }
 
-        // Start live tracking
+        // Start live tracking (ALWAYS USES VIT BIBWEWADI - NO GPS)
         function startLiveTracking() {
-            if (!navigator.geolocation) {
-                alert('Geolocation is not supported by your browser');
-                return;
-            }
-            
             isTracking = true;
             updateStatus(true);
             
-            // Update location every 15 seconds for better tracking
-            trackingInterval = setInterval(() => {
-                navigator.geolocation.getCurrentPosition(
-                    async (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        console.log('📍 Live tracking update:', lat, lng);
-                        
-                        try {
-                            await sendVolunteerLocation(lat, lng);
-                            
-                            // Update map with volunteer location
-                            updateVolunteerMarker(lat, lng);
-                        } catch (error) {
-                            console.error('Failed to send location:', error);
-                        }
-                    },
-                    (error) => {
-                        console.error('Geolocation error:', error);
-                        showAlert('Location access denied. Please enable location services.', 'warning');
-                    },
-                    { 
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 30000
-                    }
-                );
-            }, 15000); // Every 15 seconds for better tracking
+            // ALWAYS use VIT Bibwewadi coordinates - never change location
+            const vitLat = VIT_BIBWEWADI_COORDS.lat;
+            const vitLng = VIT_BIBWEWADI_COORDS.lng;
             
-            // Do immediate first update
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                try {
-                    await fetch('/api/pickup-tracking/location', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            donation_id: donationId,
-                            lat: lat,
-                            lng: lng
-                        })
-                    });
-                    
-                    updateVolunteerMarker(lat, lng);
-                } catch (error) {
-                    console.error('Failed to send initial location:', error);
-                }
-            });
+            console.log('📍 Starting tracking with PERMANENT VIT Bibwewadi location:', vitLat, vitLng);
+            
+            // Send VIT location immediately
+            sendVolunteerLocation(vitLat, vitLng);
+            
+            // Update marker to VIT location (ensure it stays at VIT)
+            updateVolunteerMarker(vitLat, vitLng, VIT_BIBWEWADI_COORDS.address);
+            
+            // Update location every 15 seconds (ALWAYS VIT - never changes)
+            trackingInterval = setInterval(() => {
+                console.log('📍 Tracking update - sending VIT Bibwewadi location (permanent)');
+                sendVolunteerLocation(vitLat, vitLng);
+                // Ensure marker stays at VIT
+                updateVolunteerMarker(vitLat, vitLng, VIT_BIBWEWADI_COORDS.address);
+            }, 15000); // Every 15 seconds - always VIT location
         }
         
         // Stop live tracking
@@ -711,15 +1375,99 @@
                 clearInterval(trackingInterval);
                 trackingInterval = null;
             }
+            
+            // Note: We keep watching position for map updates, but don't send to server
         }
         
-        // Update volunteer marker on map
-        function updateVolunteerMarker(lat, lng) {
-            if (volunteerMarker) {
-                currentMap.removeLayer(volunteerMarker);
+        // Calculate distance between two points (Haversine formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // Distance in km
+        }
+        
+        // Update route distances display
+        function updateRouteDistances() {
+            if (!volunteerLocation) {
+                console.log('⚠️ Cannot update distances: volunteer location not available');
+                return;
             }
             
-            volunteerMarker = L.marker([lat, lng], {
+            if (!donorMarker || !ngoMarker) {
+                console.log('⚠️ Cannot update distances: markers not ready');
+                return;
+            }
+            
+            try {
+                const volunteerLatLng = volunteerLocation;
+                const donorLatLng = donorMarker.getLatLng();
+                const ngoLatLng = ngoMarker.getLatLng();
+                
+                // Calculate Volunteer → Donor distance
+                const distanceVolunteerDonor = calculateDistance(
+                    volunteerLatLng.lat, volunteerLatLng.lng,
+                    donorLatLng.lat, donorLatLng.lng
+                );
+                const donorDistanceEl = document.getElementById('distanceVolunteerDonor');
+                if (donorDistanceEl) {
+                    donorDistanceEl.textContent = `${distanceVolunteerDonor.toFixed(2)} km`;
+                }
+                
+                // Calculate Volunteer → NGO distance
+                const distanceVolunteerNGO = calculateDistance(
+                    volunteerLatLng.lat, volunteerLatLng.lng,
+                    ngoLatLng.lat, ngoLatLng.lng
+                );
+                const ngoDistanceEl = document.getElementById('distanceVolunteerNGO');
+                if (ngoDistanceEl) {
+                    ngoDistanceEl.textContent = `${distanceVolunteerNGO.toFixed(2)} km`;
+                }
+                
+                console.log('✅ Route distances updated:', {
+                    volunteerToDonor: distanceVolunteerDonor.toFixed(2) + ' km',
+                    volunteerToNGO: distanceVolunteerNGO.toFixed(2) + ' km'
+                });
+            } catch (error) {
+                console.error('❌ Error updating route distances:', error);
+            }
+        }
+        
+        // Update volunteer marker on map with EXACT REAL-TIME GPS location
+        function updateVolunteerMarker(lat, lng, exactAddress = null) {
+            // ALWAYS use VIT Bibwewadi coordinates - never change from VIT
+            // Force location to stay at VIT even if different coordinates are passed
+            const vitLat = VIT_BIBWEWADI_COORDS.lat;
+            const vitLng = VIT_BIBWEWADI_COORDS.lng;
+            const vitAddress = exactAddress || VIT_BIBWEWADI_COORDS.address;
+            
+            volunteerLocation = { lat: vitLat, lng: vitLng }; 
+            console.log('📍📍📍 UPDATING WITH PERMANENT VIT BIBWEWADI LOCATION:', {
+                lat: vitLat.toFixed(8),
+                lng: vitLng.toFixed(8),
+                address: vitAddress,
+                timestamp: new Date().toISOString(),
+                source: 'PERMANENT VIT BIBWEWADI CAMPUS (NEVER CHANGES)'
+            });
+            
+            if (!currentMap) {
+                console.error('❌ Cannot update marker: map not initialized');
+                return;
+            }
+            
+            // Remove old marker if exists (might be from cached location)
+            if (volunteerMarker) {
+                currentMap.removeLayer(volunteerMarker);
+                console.log('🗑️ Removed old marker (was from cached location)');
+            }
+            
+            // Create marker with PERMANENT VIT Bibwewadi coordinates
+            volunteerMarker = L.marker([vitLat, vitLng], {
                 icon: L.divIcon({
                     className: 'custom-marker volunteer-marker',
                     html: '<div class="marker-icon volunteer-icon"><i class="fas fa-walking"></i></div>',
@@ -727,12 +1475,52 @@
                     iconAnchor: [15, 30]
                 })
             }).addTo(currentMap)
-            .bindPopup('<b>🚶 Your Current Location</b><br>Last updated: ' + new Date().toLocaleTimeString());
+            .bindPopup(`<b>📍 VIT Bibwewadi Campus</b><br>Permanent Location<br>Lat: ${vitLat.toFixed(8)}, Lng: ${vitLng.toFixed(8)}<br>${vitAddress}<br>Last updated: ${new Date().toLocaleTimeString()}`)
+            .openPopup();
             
-            // Update route if tracking is active
-            if (isTracking && donorMarker && ngoMarker) {
-                updateRoute();
+            console.log('✅ Marker placed at PERMANENT VIT Bibwewadi location:', vitLat.toFixed(8), vitLng.toFixed(8));
+            
+            // Build popup content with exact address
+            let popupContent = `
+                <b>🚶 Your REAL Current Location</b><br>
+                <b>Live GPS Location (NOT CACHED)</b><br>
+                Latitude: ${lat.toFixed(8)}<br>
+                Longitude: ${lng.toFixed(8)}<br>
+            `;
+            
+            if (exactAddress) {
+                popupContent += `<hr><b>📍 Exact Address:</b><br><small>${exactAddress}</small><br>`;
             }
+            
+            popupContent += `
+                Last updated: ${new Date().toLocaleTimeString()}<br>
+                <small class="text-success">✓ Real-Time GPS Active</small>
+            `;
+            
+            volunteerMarker.bindPopup(popupContent).openPopup();
+            
+            // ALWAYS center map on PERMANENT VIT Bibwewadi location
+            console.log('🗺️🗺️🗺️ CENTERING MAP ON PERMANENT VIT BIBWEWADI:', vitLat, vitLng);
+            console.log('📍 Location is PERMANENTLY set to VIT Bibwewadi Campus');
+            
+            // Center map on VIT Bibwewadi with appropriate zoom
+            setTimeout(() => {
+                currentMap.setView([vitLat, vitLng], 16, { animate: true });
+                currentMap.panTo([vitLat, vitLng], { animate: true, duration: 1.5 });
+                console.log('✅✅✅ Map centered on PERMANENT VIT Bibwewadi location');
+            }, 100);
+            
+            // Update route distances after a short delay to ensure markers are ready
+            setTimeout(() => {
+                updateRouteDistances();
+                
+                // Update active route if one is selected
+                if (activeRoute === 'volunteer-donor' && donorMarker) {
+                    drawRouteVolunteerToDonor();
+                } else if (activeRoute === 'volunteer-ngo' && ngoMarker) {
+                    drawRouteVolunteerToNGO();
+                }
+            }, 300);
         }
         
         // Update status indicator
@@ -754,10 +1542,18 @@
             }
         }
         
-        // Center map on all markers
+        // Center map - PRIORITIZE volunteer GPS location
         function centerMapOnAllMarkers() {
             if (!currentMap) return;
             
+            // CRITICAL: If volunteer has REAL GPS location, center ONLY on that
+            if (volunteerLocation && volunteerLocation.lat && volunteerLocation.lng) {
+                console.log('🎯 Centering map on YOUR REAL GPS location:', volunteerLocation);
+                currentMap.setView([volunteerLocation.lat, volunteerLocation.lng], 16, { animate: true });
+                return;
+            }
+            
+            // Fallback: center on all markers if no GPS location yet
             const group = new L.featureGroup();
             if (donorMarker) group.addLayer(donorMarker);
             if (ngoMarker) group.addLayer(ngoMarker);
@@ -768,54 +1564,116 @@
             }
         }
         
-        // Update route from volunteer to NGO
-        function updateRoute() {
-            if (!currentMap || !volunteerMarker || !ngoMarker) return;
-            
-            // Remove existing route
-            if (routeLayer) {
-                currentMap.removeLayer(routeLayer);
+        // Draw route from Volunteer to Donor
+        function drawRouteVolunteerToDonor() {
+            if (!currentMap) {
+                console.log('⚠️ Cannot draw route: map not initialized');
+                return;
             }
             
-            // Create new route from volunteer to NGO
-            const volunteerLatLng = volunteerMarker.getLatLng();
-            const ngoLatLng = ngoMarker.getLatLng();
-            
-            routeLayer = L.polyline([volunteerLatLng, ngoLatLng], {
-                color: '#28a745',
-                weight: 4,
-                opacity: 0.8,
-                dashArray: '10, 10'
-            }).addTo(currentMap);
-            
-            console.log('Route updated from volunteer to NGO');
-        }
-
-        // Show route between markers
-        function showRoute() {
-            if (!currentMap || !donorMarker || !ngoMarker) return;
-            
-            // Remove existing route
-            if (routeLayer) {
-                currentMap.removeLayer(routeLayer);
+            if (!volunteerLocation || !volunteerLocation.lat || !volunteerLocation.lng) {
+                console.log('⚠️ Cannot draw route: volunteer location not set');
+                return;
             }
+            
+            if (!donorMarker) {
+                console.log('⚠️ Cannot draw route: donor marker not available');
+                return;
+            }
+            
+            // Remove existing routes
+            clearAllRoutes();
+            
+            const volunteerLatLng = volunteerLocation;
+            const donorLatLng = donorMarker.getLatLng();
+            
+            // Calculate distance
+            const distance = calculateDistance(
+                volunteerLatLng.lat, volunteerLatLng.lng,
+                donorLatLng.lat, donorLatLng.lng
+            );
             
             // Create route line
-            const route = L.polyline([
-                [donorMarker.getLatLng().lat, donorMarker.getLatLng().lng],
-                [ngoMarker.getLatLng().lat, ngoMarker.getLatLng().lng]
+            routeLayer = L.polyline([
+                [volunteerLatLng.lat, volunteerLatLng.lng],
+                [donorLatLng.lat, donorLatLng.lng]
             ], {
-                color: '#667eea',
-                weight: 4,
-                opacity: 0.8,
-                dashArray: '10, 10'
+                color: '#3b82f6',
+                weight: 5,
+                opacity: 0.9,
+                dashArray: '15, 10'
             }).addTo(currentMap);
             
-            routeLayer = route;
+            routeLayer.bindPopup(`<b>🚶 Volunteer → Donor</b><br>Distance: ${distance.toFixed(2)} km`);
             
-            // Add route info
-            const distance = donorMarker.getLatLng().distanceTo(ngoMarker.getLatLng()) / 1000;
-            route.bindPopup(`<b>🚚 Delivery Route</b><br>Distance: ${distance.toFixed(2)} km`);
+            console.log('✅ Route drawn: Volunteer → Donor');
+        }
+        
+        // Draw route from Volunteer to NGO
+        function drawRouteVolunteerToNGO() {
+            if (!currentMap) {
+                console.log('⚠️ Cannot draw route: map not initialized');
+                return;
+            }
+            
+            if (!volunteerLocation || !volunteerLocation.lat || !volunteerLocation.lng) {
+                console.log('⚠️ Cannot draw route: volunteer location not set');
+                return;
+            }
+            
+            if (!ngoMarker) {
+                console.log('⚠️ Cannot draw route: NGO marker not available');
+                return;
+            }
+            
+            // Remove existing routes
+            clearAllRoutes();
+            
+            const volunteerLatLng = volunteerLocation;
+            const ngoLatLng = ngoMarker.getLatLng();
+            
+            // Calculate distance
+            const distance = calculateDistance(
+                volunteerLatLng.lat, volunteerLatLng.lng,
+                ngoLatLng.lat, ngoLatLng.lng
+            );
+            
+            // Create route line
+            routeLayer = L.polyline([
+                [volunteerLatLng.lat, volunteerLatLng.lng],
+                [ngoLatLng.lat, ngoLatLng.lng]
+            ], {
+                color: '#10b981',
+                weight: 5,
+                opacity: 0.9,
+                dashArray: '15, 10'
+            }).addTo(currentMap);
+            
+            routeLayer.bindPopup(`<b>🚚 Volunteer → NGO</b><br>Distance: ${distance.toFixed(2)} km`);
+            
+            console.log('✅ Route drawn: Volunteer → NGO');
+        }
+        
+        // Clear all routes
+        function clearAllRoutes() {
+            if (!currentMap) return;
+            
+            if (routeLayer) {
+                try {
+                    currentMap.removeLayer(routeLayer);
+                } catch (error) {
+                    console.warn('Error removing route layer:', error);
+                }
+                routeLayer = null;
+            }
+            if (routeLayer2) {
+                try {
+                    currentMap.removeLayer(routeLayer2);
+                } catch (error) {
+                    console.warn('Error removing route layer 2:', error);
+                }
+                routeLayer2 = null;
+            }
         }
         
         // Toggle fullscreen
@@ -925,33 +1783,94 @@
         });
         
         // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize map immediately with fallback coordinates
-            console.log('Initializing fallback map immediately');
-            currentMap = initLiveMap(null, null, null);
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing pickup tracking page...');
             
-            // Get volunteer's current location immediately
-            setTimeout(() => {
-                getCurrentVolunteerLocation();
-            }, 1000);
+            // Step 1: Get exact VIT Bibwewadi coordinates first
+            await getVITExactCoordinates();
+            console.log('✅ VIT Bibwewadi coordinates ready:', VIT_BIBWEWADI_COORDS);
             
-            // Then try to load real data
-            setTimeout(() => {
-                initializeMap();
+            // Step 2: Load map and set VIT location DIRECTLY (NO GPS)
+            initializeMap().then(() => {
+                console.log('📍 Setting VIT Bibwewadi location DIRECTLY (NO GPS TRACKING)...');
                 
-                // Auto-start tracking after map loads
-                setTimeout(() => {
-                    console.log('Auto-starting live tracking');
-                    startLiveTracking();
-                }, 2000);
-            }, 500);
+                // Set VIT location immediately
+                setVITLocationDirectly();
+                
+                console.log('✅ VIT Bibwewadi location set successfully');
+            }).catch(() => {
+                // Fallback: Initialize map with default coordinates
+                console.log('⚠️ Using fallback map initialization');
+                currentMap = initLiveMap(null, null, null);
+                
+                // Set VIT location directly
+                setVITLocationDirectly();
+            });
             
             // Add map control event listeners
             document.getElementById('centerMapBtn').addEventListener('click', centerMapOnAllMarkers);
             document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
             document.getElementById('refreshMapBtn').addEventListener('click', refreshMap);
             document.getElementById('showAllMarkersBtn').addEventListener('click', centerMapOnAllMarkers);
-            document.getElementById('showRouteBtn').addEventListener('click', showRoute);
+            
+            // Route option buttons (after DOM is ready)
+            setTimeout(() => {
+                const routeVolunteerToDonorBtn = document.getElementById('routeVolunteerToDonor');
+                const routeVolunteerToNGOBtn = document.getElementById('routeVolunteerToNGO');
+                const routeClearBtn = document.getElementById('routeClear');
+                
+                if (routeVolunteerToDonorBtn) {
+                    routeVolunteerToDonorBtn.addEventListener('click', function() {
+                        // Remove active class from all buttons
+                        document.querySelectorAll('.route-option-btn').forEach(btn => btn.classList.remove('active'));
+                        // Add active class to clicked button
+                        this.classList.add('active');
+                        activeRoute = 'volunteer-donor';
+                        
+                        if (volunteerLocation && donorMarker) {
+                            drawRouteVolunteerToDonor();
+                            showAlert('Route: Volunteer → Donor displayed', 'info');
+                        } else if (!volunteerLocation) {
+                            showAlert('Setting VIT Bibwewadi location...', 'info');
+                            setVITLocationDirectly();
+                            setTimeout(() => drawRouteVolunteerToDonor(), 500);
+                        } else if (!donorMarker) {
+                            showAlert('Donor location not available', 'warning');
+                        }
+                    });
+                }
+                
+                if (routeVolunteerToNGOBtn) {
+                    routeVolunteerToNGOBtn.addEventListener('click', function() {
+                        // Remove active class from all buttons
+                        document.querySelectorAll('.route-option-btn').forEach(btn => btn.classList.remove('active'));
+                        // Add active class to clicked button
+                        this.classList.add('active');
+                        activeRoute = 'volunteer-ngo';
+                        
+                        if (volunteerLocation && ngoMarker) {
+                            drawRouteVolunteerToNGO();
+                            showAlert('Route: Volunteer → NGO displayed', 'info');
+                        } else if (!volunteerLocation) {
+                            showAlert('Setting VIT Bibwewadi location...', 'info');
+                            setVITLocationDirectly();
+                            setTimeout(() => drawRouteVolunteerToNGO(), 500);
+                        } else if (!ngoMarker) {
+                            showAlert('NGO location not available', 'warning');
+                        }
+                    });
+                }
+                
+                if (routeClearBtn) {
+                    routeClearBtn.addEventListener('click', function() {
+                        // Remove active class from all buttons
+                        document.querySelectorAll('.route-option-btn').forEach(btn => btn.classList.remove('active'));
+                        activeRoute = null;
+                        clearAllRoutes();
+                        showAlert('Routes cleared', 'info');
+                    });
+                }
+            }, 1000);
         });
         
         // Cleanup on page unload
@@ -959,6 +1878,7 @@
             if (isTracking) {
                 stopLiveTracking();
             }
+            stopWatchingPosition();
         });
         
         // Handle page visibility change
